@@ -32,6 +32,15 @@ const DataSiswa = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Enhanced Excel import with validation preview
+  const [importPreview, setImportPreview] = useState<{
+    validStudents: any[];
+    errors: string[];
+    duplicates: any[];
+    showPreview: boolean;
+  }>({ validStudents: [], errors: [], duplicates: [], showPreview: false });
+  const [importProgress, setImportProgress] = useState(0);
   const [formData, setFormData] = useState({
     student_id: "",
     name: "",
@@ -163,96 +172,214 @@ const DataSiswa = () => {
 
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
       toast({
-        title: "Error",
+        title: "Format File Tidak Valid",
         description: "File harus berformat Excel (.xlsx atau .xls)",
         variant: "destructive",
       });
       return;
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Terlalu Besar",
+        description: "Ukuran file maksimal 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsImporting(true);
+    setImportProgress(10);
     
     try {
       const data = await file.arrayBuffer();
+      setImportProgress(30);
+      
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      setImportProgress(50);
 
-      // Skip header row and process data
+      const headers = jsonData[0] as string[];
+      const expectedHeaders = ['NIS', 'Nama Lengkap', 'Kelas', 'Jenis Kelamin'];
+      const headerValid = expectedHeaders.every((header, index) => 
+        headers[index]?.toString().toLowerCase().includes(header.toLowerCase())
+      );
+
+      if (!headerValid) {
+        toast({
+          title: "Format Header Salah",
+          description: "Header harus: NIS, Nama Lengkap, Kelas, Jenis Kelamin",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const rows = jsonData.slice(1) as any[][];
-      const studentsToImport = [];
-      let errors = [];
+      const validStudents = [];
+      const errors = [];
+      const duplicates = [];
+      let processedRows = 0;
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length === 0) continue;
 
         const [nis, name, className, gender] = row;
+        const rowNumber = i + 2;
         
-        if (!nis || !name || !className || !gender) {
-          errors.push(`Baris ${i + 2}: NIS, Nama, Kelas, dan Jenis Kelamin wajib diisi`);
+        const validationErrors = [];
+        
+        if (!nis || nis.toString().trim() === '') {
+          validationErrors.push('NIS kosong');
+        } else if (!/^\d+$/.test(nis.toString().trim())) {
+          validationErrors.push('NIS harus berupa angka');
+        }
+        
+        if (!name || name.toString().trim() === '') {
+          validationErrors.push('Nama kosong');
+        } else if (name.toString().trim().length < 2) {
+          validationErrors.push('Nama terlalu pendek');
+        }
+        
+        if (!className || className.toString().trim() === '') {
+          validationErrors.push('Kelas kosong');
+        }
+        
+        if (!gender || !['Laki-laki', 'Perempuan', 'L', 'P'].includes(gender.toString().trim())) {
+          validationErrors.push('Jenis kelamin harus "Laki-laki" atau "Perempuan"');
+        }
+
+        if (validationErrors.length > 0) {
+          errors.push(`Baris ${rowNumber}: ${validationErrors.join(', ')}`);
           continue;
         }
 
-        // Find class by name
-        const classData = classes.find(c => c.name.toLowerCase() === className.toString().toLowerCase());
+        const normalizedGender = gender.toString().trim() === 'L' ? 'Laki-laki' : 
+                                gender.toString().trim() === 'P' ? 'Perempuan' : 
+                                gender.toString().trim();
+
+        const classData = classes.find(c => 
+          c.name.toLowerCase().trim() === className.toString().toLowerCase().trim()
+        );
         if (!classData) {
-          errors.push(`Baris ${i + 2}: Kelas "${className}" tidak ditemukan`);
+          errors.push(`Baris ${rowNumber}: Kelas "${className}" tidak ditemukan`);
           continue;
         }
 
-        // Check if student already exists
-        const existingStudent = students.find(s => s.student_id === nis.toString());
+        const duplicateInCurrent = validStudents.find(s => s.student_id === nis.toString().trim());
+        if (duplicateInCurrent) {
+          errors.push(`Baris ${rowNumber}: NIS "${nis}" duplikat dalam file`);
+          continue;
+        }
+
+        const existingStudent = students.find(s => s.student_id === nis.toString().trim());
         if (existingStudent) {
-          errors.push(`Baris ${i + 2}: Siswa dengan NIS "${nis}" sudah ada`);
+          duplicates.push({
+            rowNumber,
+            student_id: nis.toString().trim(),
+            name: name.toString().trim(),
+            existing_name: existingStudent.name,
+            className: className.toString().trim()
+          });
           continue;
         }
 
-        studentsToImport.push({
-          student_id: nis.toString(),
-          name: name.toString(),
+        validStudents.push({
+          rowNumber,
+          student_id: nis.toString().trim(),
+          name: name.toString().trim(),
           class_id: classData.id,
-          gender: gender.toString(),
+          className: classData.name,
+          gender: normalizedGender,
           is_active: true
         });
+        
+        processedRows++;
+        setImportProgress(50 + (processedRows / rows.length) * 30);
       }
 
-      if (errors.length > 0) {
-        toast({
-          title: "Peringatan",
-          description: `${errors.length} baris gagal diimport. Periksa format data.`,
-          variant: "destructive",
-        });
-        console.log("Import errors:", errors);
-      }
+      setImportProgress(90);
 
-      if (studentsToImport.length > 0) {
-        const { error } = await (supabase as any)
-          .from('students')
-          .insert(studentsToImport);
+      setImportPreview({
+        validStudents,
+        errors,
+        duplicates,
+        showPreview: true
+      });
 
-        if (error) throw error;
-
-        toast({
-          title: "Berhasil",
-          description: `${studentsToImport.length} siswa berhasil diimport`,
-        });
-
-        fetchStudents();
-      }
+      setImportProgress(100);
 
     } catch (error) {
-      console.error('Error importing Excel file:', error);
+      console.error('Error processing Excel file:', error);
       toast({
         title: "Error",
-        description: "Gagal mengimport file Excel",
+        description: "Gagal memproses file Excel. Pastikan format file benar.",
         variant: "destructive",
       });
     } finally {
       setIsImporting(false);
+      setImportProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const confirmImport = async (handleDuplicates: 'skip' | 'update' = 'skip') => {
+    setIsImporting(true);
+    
+    try {
+      let studentsToProcess = [...importPreview.validStudents];
+      
+      if (handleDuplicates === 'update' && importPreview.duplicates.length > 0) {
+        for (const duplicate of importPreview.duplicates) {
+          const existingStudent = students.find(s => s.student_id === duplicate.student_id);
+          if (existingStudent) {
+            const classData = classes.find(c => c.name === duplicate.className);
+            const { error } = await (supabase as any)
+              .from('students')
+              .update({
+                name: duplicate.name,
+                class_id: classData?.id,
+                gender: duplicate.gender
+              })
+              .eq('id', existingStudent.id);
+            
+            if (error) throw error;
+          }
+        }
+      }
+
+      if (studentsToProcess.length > 0) {
+        const studentsData = studentsToProcess.map(({ rowNumber, className, ...student }) => student);
+        const { error } = await (supabase as any)
+          .from('students')
+          .insert(studentsData);
+
+        if (error) throw error;
+      }
+
+      const totalProcessed = studentsToProcess.length + 
+        (handleDuplicates === 'update' ? importPreview.duplicates.length : 0);
+
+      toast({
+        title: "Import Berhasil",
+        description: `${totalProcessed} siswa berhasil diproses`,
+      });
+
+      fetchStudents();
+      setImportPreview({ validStudents: [], errors: [], duplicates: [], showPreview: false });
+
+    } catch (error) {
+      console.error('Error importing students:', error);
+      toast({
+        title: "Error",
+        description: "Gagal mengimport data siswa",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -321,6 +448,7 @@ const DataSiswa = () => {
                   onChange={handleFileUpload}
                   accept=".xlsx,.xls"
                   className="hidden"
+                  aria-label="Upload Excel file for student data import"
                 />
                 <Button
                   variant="outline"
@@ -420,6 +548,183 @@ const DataSiswa = () => {
                 </Dialog>
               </div>
             </div>
+
+            {/* Import Preview Dialog */}
+            <Dialog open={importPreview.showPreview} onOpenChange={(open) => 
+              setImportPreview(prev => ({ ...prev, showPreview: open }))
+            }>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-education-primary" />
+                    Preview Import Data
+                  </DialogTitle>
+                  <DialogDescription>
+                    Tinjau data yang akan diimport sebelum menyimpan ke database
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* Import Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-green-200 bg-green-50">
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">
+                            {importPreview.validStudents.length}
+                          </div>
+                          <div className="text-sm text-green-700">Data Valid</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-yellow-200 bg-yellow-50">
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-yellow-600">
+                            {importPreview.duplicates.length}
+                          </div>
+                          <div className="text-sm text-yellow-700">Duplikat</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-red-200 bg-red-50">
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-red-600">
+                            {importPreview.errors.length}
+                          </div>
+                          <div className="text-sm text-red-700">Error</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Valid Students */}
+                  {importPreview.validStudents.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-green-700">
+                        Data Valid ({importPreview.validStudents.length})
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        <div className="grid gap-2 p-3">
+                          {importPreview.validStudents.map((student, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded border">
+                              <div>
+                                <span className="font-medium">{student.name}</span>
+                                <span className="text-sm text-muted-foreground ml-2">({student.student_id})</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Badge variant="secondary">{student.className}</Badge>
+                                <Badge variant="outline">{student.gender}</Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duplicates */}
+                  {importPreview.duplicates.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-yellow-700">
+                        Data Duplikat ({importPreview.duplicates.length})
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        <div className="grid gap-2 p-3">
+                          {importPreview.duplicates.map((duplicate, index) => (
+                            <div key={index} className="p-2 bg-yellow-50 rounded border">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-medium">{duplicate.name}</span>
+                                  <span className="text-sm text-muted-foreground ml-2">({duplicate.student_id})</span>
+                                </div>
+                                <Badge variant="secondary">{duplicate.className}</Badge>
+                              </div>
+                              <div className="text-xs text-yellow-700 mt-1">
+                                Sudah ada: {duplicate.existing_name}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Errors */}
+                  {importPreview.errors.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-red-700">
+                        Error ({importPreview.errors.length})
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        <div className="grid gap-1 p-3">
+                          {importPreview.errors.map((error, index) => (
+                            <div key={index} className="text-sm text-red-600 p-2 bg-red-50 rounded">
+                              {error}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setImportPreview(prev => ({ ...prev, showPreview: false }))}
+                  >
+                    Batal
+                  </Button>
+                  
+                  {importPreview.duplicates.length > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => confirmImport('update')}
+                      disabled={isImporting}
+                      className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                    >
+                      {isImporting ? "Memproses..." : "Import & Update Duplikat"}
+                    </Button>
+                  )}
+                  
+                  {importPreview.validStudents.length > 0 && (
+                    <Button
+                      onClick={() => confirmImport('skip')}
+                      disabled={isImporting}
+                      className="bg-gradient-to-r from-education-primary to-education-secondary hover:from-education-primary/90 hover:to-education-secondary/90"
+                    >
+                      {isImporting ? "Memproses..." : `Import ${importPreview.validStudents.length} Siswa`}
+                    </Button>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Progress indicator during import */}
+            {isImporting && importProgress > 0 && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <Card className="p-6 min-w-80">
+                  <div className="text-center space-y-4">
+                    <Upload className="h-8 w-8 mx-auto text-education-primary animate-pulse" />
+                    <div>
+                      <div className="text-lg font-semibold">Memproses File Excel</div>
+                      <div className="text-sm text-muted-foreground">Mohon tunggu...</div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-education-primary to-education-secondary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${importProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{importProgress}%</div>
+                  </div>
+                </Card>
+              </div>
+            )}
 
             {/* Students Table */}
             <div className="space-y-4">
