@@ -64,7 +64,7 @@ export default function Login() {
               Login Admin
             </CardTitle>
             <CardDescription className="text-education-secondary/70">
-              Sistem Absensi SMPN 3 KEBAKKRAMAT
+              Manajemen Absensi Digital SMPN 3 KEBAKKRAMAT
             </CardDescription>
           </div>
         </CardHeader>

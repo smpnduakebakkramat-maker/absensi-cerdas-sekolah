@@ -56,7 +56,7 @@ export function Layout({ children }: LayoutProps) {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-foreground">SMPN 3 KEBAKKRAMAT</h1>
-                <p className="text-sm text-muted-foreground">Sistem Absensi Cerdas</p>
+                <p className="text-sm text-muted-foreground">Manajemen Absensi Digital</p>
               </div>
             </div>
           </div>
