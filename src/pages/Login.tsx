@@ -53,7 +53,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-education-primary/10 to-education-accent/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-education-primary/5 p-4">
       <Card className="w-full max-w-md shadow-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-education-primary to-education-secondary rounded-full flex items-center justify-center">
