@@ -81,11 +81,11 @@ const Dashboard = () => {
       description: "Input absensi harian siswa",
       icon: ClipboardList,
       href: "/absensi",
-      color: "from-blue-50 to-blue-100/50",
-      borderColor: "border-blue-200",
-      textColor: "text-blue-700",
-      iconColor: "text-blue-600",
-      titleColor: "text-blue-800"
+      color: "bg-card",
+      borderColor: "border-border",
+      textColor: "text-foreground",
+      iconColor: "text-primary",
+      titleColor: "text-foreground"
     },
     {
       title: "Rekap Absensi", 
@@ -93,11 +93,11 @@ const Dashboard = () => {
       description: "Lihat rekap dan export data",
       icon: BarChart3,
       href: "/laporan",
-      color: "from-green-50 to-green-100/50",
-      borderColor: "border-green-200",
-      textColor: "text-green-700",
-      iconColor: "text-green-600",
-      titleColor: "text-green-800"
+      color: "bg-card",
+      borderColor: "border-border",
+      textColor: "text-foreground",
+      iconColor: "text-primary",
+      titleColor: "text-foreground"
     },
     {
       title: "Data Siswa",
@@ -105,11 +105,11 @@ const Dashboard = () => {
       description: "Kelola data siswa",
       icon: Users,
       href: "/siswa",
-      color: "from-purple-50 to-purple-100/50",
-      borderColor: "border-purple-200",
-      textColor: "text-purple-700",
-      iconColor: "text-purple-600",
-      titleColor: "text-purple-800"
+      color: "bg-card",
+      borderColor: "border-border",
+      textColor: "text-foreground",
+      iconColor: "text-primary",
+      titleColor: "text-foreground"
     },
     {
       title: "Total Siswa",
@@ -117,11 +117,11 @@ const Dashboard = () => {
       description: "Siswa aktif terdaftar",
       icon: School,
       href: "/siswa",
-      color: "from-orange-50 to-orange-100/50",
-      borderColor: "border-orange-200", 
-      textColor: "text-orange-700",
-      iconColor: "text-orange-600",
-      titleColor: "text-orange-800"
+      color: "bg-card",
+      borderColor: "border-border",
+      textColor: "text-foreground",
+      iconColor: "text-primary",
+      titleColor: "text-foreground"
     }
   ];
 
@@ -132,18 +132,18 @@ const Dashboard = () => {
     <Layout>
       <div className="space-y-6">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-education-primary/10 to-education-secondary/10 rounded-xl p-8 border border-education-secondary/20">
+        <div className="bg-card rounded-xl p-8 border border-border">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-education-primary to-education-secondary flex items-center justify-center">
+                <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
                   <School className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-education-primary">
+                  <h1 className="text-3xl font-bold text-foreground">
                     Sistem Absensi Digital
                   </h1>
-                  <p className="text-lg text-education-secondary">
+                  <p className="text-lg text-foreground">
                     SMPN 3 KEBAKKRAMAT
                   </p>
                 </div>
@@ -169,7 +169,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {menuItems.map((item, index) => (
             <Link key={index} to={item.href}>
-              <Card className={`${item.borderColor} bg-gradient-to-br ${item.color} hover:shadow-lg transition-all duration-200 cursor-pointer group h-full`}>
+              <Card className={`${item.borderColor} bg-card hover:shadow-lg transition-all duration-200 cursor-pointer group h-full`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <div className="space-y-1">
                     <CardTitle className={`text-sm font-medium ${item.textColor}`}>
@@ -201,8 +201,8 @@ const Dashboard = () => {
             <Card className="h-full">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-education-primary" />
-                  <CardTitle className="text-education-primary">Informasi Sistem</CardTitle>
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-primary">Informasi Sistem</CardTitle>
                 </div>
                 <CardDescription>
                   Fitur dan kemampuan sistem absensi digital
@@ -211,7 +211,7 @@ const Dashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-education-secondary">Fitur Utama:</h4>
+                    <h4 className="font-semibold text-foreground">Fitur Utama:</h4>
                     <ul className="space-y-2">
                       <li className="flex items-start gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -228,7 +228,7 @@ const Dashboard = () => {
                     </ul>
                   </div>
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-education-secondary">Manajemen Data:</h4>
+                    <h4 className="font-semibold text-foreground">Manajemen Data:</h4>
                     <ul className="space-y-2">
                       <li className="flex items-start gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -249,10 +249,10 @@ const Dashboard = () => {
                 <div className="pt-4 border-t">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-education-primary" />
+                      <TrendingUp className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium">Tingkat Kehadiran Hari Ini</span>
                     </div>
-                    <Badge variant="secondary" className="bg-education-primary/10 text-education-primary">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
                       {attendancePercentage}%
                     </Badge>
                   </div>
@@ -266,8 +266,8 @@ const Dashboard = () => {
             <Card className="h-full">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-education-primary" />
-                  <CardTitle className="text-education-primary">Status Kehadiran</CardTitle>
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-primary">Status Kehadiran</CardTitle>
                 </div>
                 <CardDescription>
                   Data absensi hari ini
@@ -275,32 +275,32 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-sm font-medium text-green-800">Hadir</span>
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-sm font-medium text-blue-800">Hadir</span>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 font-bold">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 font-bold">
                       {stats.todayAttendance.hadir}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-education-accent/10 to-education-primary/10 border border-education-accent/20">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 border border-yellow-200">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-education-accent"></div>
-                      <span className="text-sm font-medium text-education-secondary">Sakit</span>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span className="text-sm font-medium text-yellow-800">Sakit</span>
                     </div>
-                    <Badge variant="secondary" className="bg-education-accent/10 text-education-secondary font-bold">
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 font-bold">
                       {stats.todayAttendance.sakit}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 border border-slate-200">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="text-sm font-medium text-blue-800">Izin</span>
+                      <div className="w-3 h-3 rounded-full bg-slate-500"></div>
+                      <span className="text-sm font-medium text-slate-800">Izin</span>
                     </div>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 font-bold">
+                    <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-bold">
                       {stats.todayAttendance.izin}
                     </Badge>
                   </div>

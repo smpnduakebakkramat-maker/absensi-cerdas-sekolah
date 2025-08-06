@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Search, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Search, ArrowLeft, Clock, User, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/use-debounce";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Student {
@@ -38,16 +40,79 @@ export function AttendanceForm() {
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
+  const [recentStudents, setRecentStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [showRecentStudents, setShowRecentStudents] = useState(true);
+  const debouncedSearchValue = useDebounce(searchValue, 150); // Faster debounce
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Load recent students on component mount
   useEffect(() => {
-    fetchStudents();
+    loadRecentStudents();
   }, []);
 
-  const fetchStudents = async () => {
+  useEffect(() => {
+    if (debouncedSearchValue.length > 1) {
+      setShowRecentStudents(false);
+      fetchStudents(debouncedSearchValue);
+    } else {
+      setStudents([]);
+      setShowRecentStudents(true);
+    }
+  }, [debouncedSearchValue]);
+
+  // Focus search input when popover opens
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [searchOpen]);
+
+  const loadRecentStudents = async () => {
+    try {
+      // Get recent students from today's attendance or recent searches
+      const { data, error } = await supabase
+        .from("attendance")
+        .select(`
+          students!inner(
+            id,
+            student_id,
+            name,
+            gender,
+            classes!inner(name)
+          )
+        `)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      
+      const formattedStudents = data?.map((record: any) => ({
+        id: record.students.id,
+        student_id: record.students.student_id,
+        name: record.students.name,
+        gender: record.students.gender || "",
+        class_name: record.students.classes?.name || ""
+      })) || [];
+      
+      // Remove duplicates based on student ID
+      const uniqueStudents = formattedStudents.filter((student, index, self) => 
+        index === self.findIndex(s => s.id === student.id)
+      );
+      
+      setRecentStudents(uniqueStudents);
+    } catch (error) {
+      console.error("Error loading recent students:", error);
+    }
+  };
+
+  const fetchStudents = async (searchTerm: string) => {
+    setIsSearching(true);
     try {
       const { data, error } = await supabase
         .from("students")
@@ -58,8 +123,10 @@ export function AttendanceForm() {
           gender,
           classes!inner(name)
         `)
+        .or(`name.ilike.%${searchTerm}%,student_id.ilike.%${searchTerm}%`)
         .eq("is_active", true)
-        .order("name");
+        .order('name')
+        .limit(15); // Increased limit for better search results
 
       if (error) throw error;
       
@@ -79,13 +146,28 @@ export function AttendanceForm() {
         description: "Gagal memuat data siswa",
         variant: "destructive",
       });
+    } finally {
+      setIsSearching(false);
     }
   };
 
   const handleStudentSelect = (student: Student) => {
     setSelectedStudent(student);
-    setSearchValue(`${student.student_id} - ${student.name}`);
+    setSearchValue(`${student.name} (${student.student_id})`);
     setSearchOpen(false);
+    setAttendanceStatus("");
+    setNotes("");
+    
+    // Update recent students list
+    setRecentStudents(prev => {
+      const filtered = prev.filter(s => s.id !== student.id);
+      return [student, ...filtered].slice(0, 5);
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedStudent(null);
+    setSearchValue("");
     setAttendanceStatus("");
     setNotes("");
   };
@@ -209,10 +291,14 @@ export function AttendanceForm() {
                   <Command>
                     <CommandInput 
                       placeholder="Cari siswa..." 
+                      value={searchValue}
+                      onValueChange={setSearchValue}
                       className="h-11"
                     />
                     <CommandList>
-                      <CommandEmpty>Siswa tidak ditemukan.</CommandEmpty>
+                      <CommandEmpty>
+                        {isSearching ? 'Mencari...' : 'Siswa tidak ditemukan.'}
+                      </CommandEmpty>
                       <CommandGroup>
                         {students.map((student) => (
                           <CommandItem
@@ -265,21 +351,44 @@ export function AttendanceForm() {
               </p>
             </div>
 
+            {/* Selected Student Info */}
+            {selectedStudent && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">Siswa Terpilih</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div><span className="font-medium">Nama:</span> {selectedStudent.name}</div>
+                  <div><span className="font-medium">NIS:</span> {selectedStudent.student_id}</div>
+                  <div><span className="font-medium">Kelas:</span> {selectedStudent.class_name}</div>
+                  <div><span className="font-medium">Jenis Kelamin:</span> {selectedStudent.gender}</div>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
               <Button 
                 variant="outline" 
                 onClick={handleCancel}
-                className="flex-1 border-slate-300 text-slate-700"
+                className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 Batal
               </Button>
               <Button 
                 onClick={saveAttendance} 
                 disabled={loading || !selectedStudent || !attendanceStatus}
-                className="flex-1 bg-slate-700 hover:bg-slate-800"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
               >
-                {loading ? "Menyimpan..." : "Simpan Absensi"}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Menyimpan...
+                  </div>
+                ) : (
+                  "Simpan Absensi"
+                )}
               </Button>
             </div>
           </CardContent>
