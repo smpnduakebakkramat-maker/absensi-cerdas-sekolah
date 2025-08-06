@@ -771,53 +771,80 @@ const DataSiswa = () => {
                 </h3>
               </div>
               
-              <div className="grid gap-4">
-                {filteredStudents.map(student => (
-                  <Card key={student.id} className="border border-border/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold text-lg">{student.name}</h4>
-                            <Badge variant="secondary">
-                              {student.class_name || "Kelas tidak ditemukan"}
-                            </Badge>
-                            <Badge variant={student.gender === "Laki-laki" ? "default" : "outline"}>
-                              {student.gender}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            <p><strong>NIS:</strong> {student.student_id}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditDialog(student)}
+              {filteredStudents.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Tidak ada siswa yang ditemukan</p>
+                </div>
+              ) : (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50">
+                        <tr className="border-b border-border">
+                          <th className="text-left p-3 font-medium text-sm">No</th>
+                          <th className="text-left p-3 font-medium text-sm">NIS</th>
+                          <th className="text-left p-3 font-medium text-sm">Nama Siswa</th>
+                          <th className="text-left p-3 font-medium text-sm">Kelas</th>
+                          <th className="text-left p-3 font-medium text-sm">Jenis Kelamin</th>
+                          <th className="text-center p-3 font-medium text-sm">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredStudents.map((student, index) => (
+                          <tr 
+                            key={student.id} 
+                            className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                           >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteStudent(student.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                
-                {filteredStudents.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Tidak ada siswa yang ditemukan</p>
+                            <td className="p-3 text-sm text-muted-foreground">
+                              {index + 1}
+                            </td>
+                            <td className="p-3 text-sm font-mono">
+                              {student.student_id}
+                            </td>
+                            <td className="p-3 text-sm font-medium">
+                              {student.name}
+                            </td>
+                            <td className="p-3 text-sm">
+                              <Badge variant="secondary" className="text-xs">
+                                {student.class_name || "Belum Ditentukan"}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm">
+                              <Badge 
+                                variant={student.gender === "Laki-laki" ? "default" : "outline"}
+                                className="text-xs"
+                              >
+                                {student.gender}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditDialog(student)}
+                                  className="h-8 w-8 p-0 hover:bg-blue-100"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteStudent(student.id)}
+                                  className="h-8 w-8 p-0 hover:bg-red-100 text-red-600"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

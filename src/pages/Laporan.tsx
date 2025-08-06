@@ -28,29 +28,86 @@ const Laporan = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
+  const [todayStats, setTodayStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0, total: 0 });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchClasses();
+    fetchTodayAttendance();
   }, []);
 
   useEffect(() => {
-    if (classes.length > 0) {
-      generateReport();
-    }
+    generateReport();
   }, [selectedClass, selectedMonth, selectedYear, classes]);
 
   const fetchClasses = async () => {
     try {
+      // Since classes table was dropped, get unique class names from students
       const { data, error } = await (supabase as any)
-        .from('classes')
-        .select('*')
-        .order('grade_level', { ascending: true });
+        .from('students')
+        .select('class_name')
+        .eq('is_active', true);
       
       if (error) throw error;
-      setClasses(data || []);
+      
+      // Get unique class names
+      const uniqueClasses = [...new Set(data?.map(s => s.class_name).filter(Boolean))];
+      const classesData = uniqueClasses.map(name => ({ name, id: name }));
+      
+      setClasses(classesData);
     } catch (error) {
       console.error('Error fetching classes:', error);
+    }
+  };
+
+  const fetchTodayAttendance = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get today's attendance with student details
+      const { data, error } = await (supabase as any)
+        .from('attendance')
+        .select(`
+          *,
+          students!inner(
+            id,
+            student_id,
+            name,
+            class_name,
+            gender
+          )
+        `)
+        .eq('date', today)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const attendanceData = data?.map((record: any) => ({
+        id: record.id,
+        status: record.status,
+        notes: record.notes,
+        student_name: record.students.name,
+        student_nis: record.students.student_id,
+        class_name: record.students.class_name,
+        gender: record.students.gender,
+        created_at: record.created_at
+      })) || [];
+      
+      setTodayAttendance(attendanceData);
+      
+      // Calculate today's stats
+      const stats = {
+        hadir: attendanceData.filter(a => a.status === 'Hadir').length,
+        izin: attendanceData.filter(a => a.status === 'Izin').length,
+        sakit: attendanceData.filter(a => a.status === 'Sakit').length,
+        alpha: attendanceData.filter(a => a.status === 'Alpha').length,
+        total: attendanceData.length
+      };
+      
+      setTodayStats(stats);
+    } catch (error) {
+      console.error('Error fetching today attendance:', error);
     }
   };
 
@@ -61,20 +118,14 @@ const Laporan = () => {
       const startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
 
-      // Build query for students
+      // Build query for students with the correct structure
       let studentsQuery = (supabase as any)
         .from('students')
-        .select(`
-          id,
-          student_id,
-          name,
-          class_id,
-          classes (name)
-        `)
+        .select('id, student_id, name, class_name, gender')
         .eq('is_active', true);
 
       if (selectedClass !== "all") {
-        studentsQuery = studentsQuery.eq('class_id', selectedClass);
+        studentsQuery = studentsQuery.eq('class_name', selectedClass);
       }
 
       const { data: students, error: studentsError } = await studentsQuery;
@@ -110,7 +161,7 @@ const Laporan = () => {
           student_id: student.id,
           student_name: student.name,
           student_nis: student.student_id,
-          class_name: student.classes?.name || 'Unknown',
+          class_name: student.class_name,
           total_days: workingDays,
           ...statusCounts,
           percentage
@@ -163,6 +214,110 @@ const Laporan = () => {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Today's Attendance Section */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 border-b border-blue-200">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-blue-600" />
+              Absensi Hari Ini
+            </CardTitle>
+            <CardDescription>
+              {new Date().toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Today's Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-700">
+                    {todayStats.total}
+                  </div>
+                  <p className="text-sm text-blue-600">Total Absen</p>
+                </CardContent>
+              </Card>
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-700">
+                    {todayStats.hadir}
+                  </div>
+                  <p className="text-sm text-green-600">Hadir</p>
+                </CardContent>
+              </Card>
+              <Card className="border-yellow-200 bg-yellow-50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-yellow-700">
+                    {todayStats.izin}
+                  </div>
+                  <p className="text-sm text-yellow-600">Izin</p>
+                </CardContent>
+              </Card>
+              <Card className="border-purple-200 bg-purple-50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-purple-700">
+                    {todayStats.sakit}
+                  </div>
+                  <p className="text-sm text-purple-600">Sakit</p>
+                </CardContent>
+              </Card>
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-red-700">
+                    {todayStats.alpha}
+                  </div>
+                  <p className="text-sm text-red-600">Alpha</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Today's Attendance List */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold mb-4">Daftar Absensi Hari Ini ({todayAttendance.length})</h3>
+              {todayAttendance.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {todayAttendance.map((record, index) => (
+                    <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-medium">{record.student_name}</div>
+                        <div className="text-sm text-gray-600">
+                          NIS: {record.student_nis} • {record.class_name} • {record.gender}
+                        </div>
+                        {record.notes && (
+                          <div className="text-sm text-gray-500 italic">Ket: {record.notes}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={record.status === 'Hadir' ? 'default' : 
+                                  record.status === 'Izin' ? 'secondary' : 
+                                  record.status === 'Sakit' ? 'outline' : 'destructive'}
+                        >
+                          {record.status}
+                        </Badge>
+                        <div className="text-xs text-gray-500">
+                          {new Date(record.created_at).toLocaleTimeString('id-ID', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Belum ada data absensi hari ini</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="bg-gradient-to-r from-education-primary/10 to-education-accent/10 border-b border-education-accent/20">
             <CardTitle className="flex items-center gap-2">
