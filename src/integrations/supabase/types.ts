@@ -82,33 +82,9 @@ export type Database = {
           },
         ]
       }
-      classes: {
-        Row: {
-          created_at: string
-          grade_level: number
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          grade_level: number
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          grade_level?: number
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       students: {
         Row: {
-          class_id: string | null
+          class_name: string | null
           created_at: string
           gender: string | null
           id: string
@@ -118,7 +94,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          class_id?: string | null
+          class_name?: string | null
           created_at?: string
           gender?: string | null
           id?: string
@@ -128,7 +104,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          class_id?: string | null
+          class_name?: string | null
           created_at?: string
           gender?: string | null
           id?: string
@@ -137,15 +113,7 @@ export type Database = {
           student_id?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "students_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
