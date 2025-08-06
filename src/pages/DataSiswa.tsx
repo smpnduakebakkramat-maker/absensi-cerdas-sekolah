@@ -17,76 +17,21 @@ interface Student {
   id: string;
   student_id: string;
   name: string;
-  class_id: string;
+  class_name: string;
   gender: string;
   is_active: boolean;
-  classes?: { name: string };
 }
 
-// Helper functions for class name parsing
-const extractGradeLevel = (className: string): number | null => {
-  const match = className.match(/^([789])/);
-  return match ? parseInt(match[1]) : null;
-};
-
-const extractSection = (className: string): string | null => {
-  const match = className.match(/([A-Z])$/);
-  return match ? match[1] : null;
-};
-
-// Fallback function to create class directly if database function is not available
-const createClassFallback = async (className: string) => {
-  const gradeLevel = extractGradeLevel(className);
-  const section = extractSection(className);
-  
-  const { data, error } = await (supabase as any)
-    .from('classes')
-    .insert({
-      name: className,
-      grade_level: gradeLevel,
-      section: section,
-      academic_year: '2024/2025',
-      is_active: true
-    })
-    .select()
-    .single();
-    
-  if (error) throw error;
-  return data.id;
-};
-
-// Get or create class with fallback
-const getOrCreateClass = async (className: string) => {
-  try {
-    // First try the database function
-    const { data: classId, error } = await (supabase as any)
-      .rpc('get_or_create_class', { class_name: className });
-    
-    if (!error && classId) {
-      return classId;
-    }
-  } catch (error) {
-    console.log('Database function not available, using fallback');
-  }
-  
-  // Fallback: check if class exists, if not create it
-  let { data: existingClass } = await (supabase as any)
-    .from('classes')
-    .select('id')
-    .eq('name', className)
-    .single();
-    
-  if (existingClass) {
-    return existingClass.id;
-  }
-  
-  // Create new class
-  return await createClassFallback(className);
+// Get unique class names from students
+const getUniqueClasses = (students: Student[]): string[] => {
+  const classNames = students
+    .filter(s => s.class_name && s.is_active)
+    .map(s => s.class_name);
+  return [...new Set(classNames)].sort();
 };
 
 const DataSiswa = () => {
   const [students, setStudents] = useState<Student[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -105,38 +50,20 @@ const DataSiswa = () => {
   const [formData, setFormData] = useState({
     student_id: "",
     name: "",
-    class_id: "",
+    class_name: "",
     gender: ""
   });
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchClasses();
     fetchStudents();
   }, []);
-
-  const fetchClasses = async () => {
-    try {
-      const { data, error } = await (supabase as any)
-        .from('classes')
-        .select('*')
-        .order('grade_level', { ascending: true });
-      
-      if (error) throw error;
-      setClasses(data || []);
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-    }
-  };
 
   const fetchStudents = async () => {
     try {
       const { data, error } = await (supabase as any)
         .from('students')
-        .select(`
-          *,
-          classes (name)
-        `)
+        .select('*')
         .order('name');
 
       if (error) throw error;
@@ -175,7 +102,7 @@ const DataSiswa = () => {
       setFormData({
         student_id: "",
         name: "",
-        class_id: "",
+        class_name: "",
         gender: ""
       });
       fetchStudents();
@@ -212,16 +139,18 @@ const DataSiswa = () => {
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.student_id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass === "all" || student.class_id === selectedClass;
+    const matchesClass = selectedClass === "all" || student.class_name === selectedClass;
     return matchesSearch && matchesClass && student.is_active;
   });
+
+  const uniqueClasses = getUniqueClasses(students);
 
   const openEditDialog = (student: Student) => {
     setEditingStudent(student);
     setFormData({
       student_id: student.student_id,
       name: student.name,
-      class_id: student.class_id,
+      class_name: student.class_name,
       gender: student.gender
     });
     setIsAddDialogOpen(true);
@@ -321,20 +250,6 @@ const DataSiswa = () => {
                                 gender.toString().trim();
 
         const classNameTrimmed = className.toString().trim();
-        let classData = classes.find(c => 
-          c.name.toLowerCase().trim() === classNameTrimmed.toLowerCase()
-        );
-        
-        // If class doesn't exist, we'll create it during import
-        if (!classData) {
-          // Create a temporary class object for validation
-          classData = {
-            id: `temp_${classNameTrimmed}`, // Temporary ID
-            name: classNameTrimmed,
-            grade_level: extractGradeLevel(classNameTrimmed),
-            section: extractSection(classNameTrimmed)
-          };
-        }
 
         const duplicateInCurrent = validStudents.find(s => s.student_id === nis.toString().trim());
         if (duplicateInCurrent) {
@@ -349,7 +264,7 @@ const DataSiswa = () => {
             student_id: nis.toString().trim(),
             name: name.toString().trim(),
             existing_name: existingStudent.name,
-            className: className.toString().trim()
+            className: classNameTrimmed
           });
           continue;
         }
@@ -358,8 +273,7 @@ const DataSiswa = () => {
           rowNumber,
           student_id: nis.toString().trim(),
           name: name.toString().trim(),
-          class_id: classData.id,
-          className: classData.name,
+          className: classNameTrimmed,
           gender: normalizedGender,
           is_active: true
         });
@@ -401,20 +315,17 @@ const DataSiswa = () => {
     try {
       let studentsToProcess = [...importPreview.validStudents];
       
-      // Handle duplicate updates with dynamic class creation
+      // Handle duplicate updates
       if (handleDuplicates === 'update' && importPreview.duplicates.length > 0) {
         for (const duplicate of importPreview.duplicates) {
           const existingStudent = students.find(s => s.student_id === duplicate.student_id);
           if (existingStudent) {
             try {
-              // Get or create class using fallback function
-              const classId = await getOrCreateClass(duplicate.className);
-            
               const { error } = await (supabase as any)
                 .from('students')
                 .update({
                   name: duplicate.name,
-                  class_id: classId,
+                  class_name: duplicate.className,
                   gender: duplicate.gender
                 })
                 .eq('id', existingStudent.id);
@@ -432,40 +343,21 @@ const DataSiswa = () => {
         }
       }
 
-      // Process new students with dynamic class creation
+      // Process new students
       if (studentsToProcess.length > 0) {
-        const studentsWithRealClassIds = [];
+        const studentsToInsert = studentsToProcess.map(student => ({
+          student_id: student.student_id,
+          name: student.name,
+          class_name: student.className,
+          gender: student.gender,
+          is_active: student.is_active
+        }));
         
-        for (const student of studentsToProcess) {
-          try {
-            // Get or create class using fallback function
-            const classId = await getOrCreateClass(student.className);
-          
-            studentsWithRealClassIds.push({
-              student_id: student.student_id,
-              name: student.name,
-              class_id: classId,
-              gender: student.gender,
-              is_active: student.is_active
-            });
-          } catch (error) {
-            console.error('Error creating class for student:', error);
-            toast({
-              title: "Error",
-              description: `Gagal membuat kelas ${student.className} untuk siswa ${student.name}`,
-              variant: "destructive",
-            });
-          }
-        }
-        
-        // Insert students with real class IDs
-        if (studentsWithRealClassIds.length > 0) {
-          const { error } = await (supabase as any)
-            .from('students')
-            .insert(studentsWithRealClassIds);
+        const { error } = await (supabase as any)
+          .from('students')
+          .insert(studentsToInsert);
 
-          if (error) throw error;
-        }
+        if (error) throw error;
       }
 
       const totalProcessed = studentsToProcess.length + 
@@ -477,7 +369,6 @@ const DataSiswa = () => {
       });
 
       // Refresh data
-      await fetchClasses(); // Refresh classes to show newly created ones
       await fetchStudents();
       setImportPreview({ validStudents: [], errors: [], duplicates: [], showPreview: false });
 
@@ -586,9 +477,9 @@ const DataSiswa = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Kelas</SelectItem>
-                  {classes.map(cls => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
+                  {uniqueClasses.map(className => (
+                    <SelectItem key={className} value={className}>
+                      {className}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -655,19 +546,13 @@ const DataSiswa = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="class_id">Kelas</Label>
-                        <Select value={formData.class_id} onValueChange={(value) => setFormData({...formData, class_id: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih kelas" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classes.map(cls => (
-                              <SelectItem key={cls.id} value={cls.id}>
-                                {cls.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="class_name">Kelas</Label>
+                        <Input
+                          id="class_name"
+                          value={formData.class_name}
+                          onChange={(e) => setFormData({...formData, class_name: e.target.value})}
+                          placeholder="Nama kelas (contoh: 7A, 8B, 9C)"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="gender">Jenis Kelamin</Label>
@@ -895,7 +780,7 @@ const DataSiswa = () => {
                           <div className="flex items-center gap-3 mb-2">
                             <h4 className="font-semibold text-lg">{student.name}</h4>
                             <Badge variant="secondary">
-                              {student.classes?.name || "Kelas tidak ditemukan"}
+                              {student.class_name || "Kelas tidak ditemukan"}
                             </Badge>
                             <Badge variant={student.gender === "Laki-laki" ? "default" : "outline"}>
                               {student.gender}
