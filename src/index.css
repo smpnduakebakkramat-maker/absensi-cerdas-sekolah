@@ -8,71 +8,71 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Clean modern blue education theme */
-    --background: 248 250 252;
-    --foreground: 213 27% 14%;
+    /* Dark Education Theme - Professional and Modern */
+    --background: 222 47% 11%;
+    --foreground: 213 31% 91%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 213 27% 14%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 213 27% 14%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
-    /* Primary: Deep Education Blue */
-    --primary: 214 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Bright Education Blue for dark theme */
+    --primary: 214 100% 70%;
+    --primary-foreground: 222 47% 11%;
 
-    /* Secondary: Navy Blue for depth */
-    --secondary: 221 39% 11%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Dark slate for depth */
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 213 31% 91%;
 
-    /* Muted: Light blue-gray for backgrounds */
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted: Dark blue-gray for backgrounds */
+    --muted: 215 25% 27%;
+    --muted-foreground: 217 10% 64%;
 
-    /* Accent: Bright blue for highlights */
-    --accent: 212 100% 60%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: Bright cyan-blue for highlights */
+    --accent: 212 100% 70%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 214 100% 50%;
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    --ring: 214 100% 70%;
 
-    /* Education theme colors */
-    --education-primary: 214 100% 50%;
-    --education-secondary: 221 39% 11%;
-    --education-accent: 212 100% 60%;
-    --education-light: 214 32% 91%;
+    /* Dark Education theme colors */
+    --education-primary: 214 100% 70%;
+    --education-secondary: 215 25% 27%;
+    --education-accent: 212 100% 70%;
+    --education-light: 215 25% 27%;
     --education-success: 142 76% 36%;
     --education-warning: 38 92% 50%;
     
-    /* Beautiful gradients for education theme */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 50%), hsl(221 39% 11%));
-    --gradient-secondary: linear-gradient(135deg, hsl(221 39% 11%), hsl(212 100% 60%));
-    --gradient-accent: linear-gradient(135deg, hsl(212 100% 60%), hsl(214 100% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(214 100% 50%), hsl(221 39% 11%), hsl(212 100% 60%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(214 32% 96%));
+    /* Beautiful dark gradients for education theme */
+    --gradient-primary: linear-gradient(135deg, hsl(214 100% 70%), hsl(215 25% 27%));
+    --gradient-secondary: linear-gradient(135deg, hsl(215 25% 27%), hsl(212 100% 70%));
+    --gradient-accent: linear-gradient(135deg, hsl(212 100% 70%), hsl(214 100% 70%));
+    --gradient-hero: linear-gradient(135deg, hsl(214 100% 70%), hsl(215 25% 27%), hsl(212 100% 70%));
+    --gradient-card: linear-gradient(145deg, hsl(224 71% 4%), hsl(215 25% 27%));
 
-    /* Elegant shadows with blue tints */
-    --shadow-primary: 0 10px 30px -10px hsl(214 100% 50% / 0.25);
-    --shadow-card: 0 4px 20px -4px hsl(214 100% 50% / 0.08);
-    --shadow-soft: 0 2px 10px -2px hsl(214 100% 50% / 0.05);
-    --shadow-hover: 0 8px 25px -8px hsl(214 100% 50% / 0.2);
+    /* Elegant dark shadows with blue tints */
+    --shadow-primary: 0 10px 30px -10px hsl(214 100% 70% / 0.3);
+    --shadow-card: 0 4px 20px -4px hsl(214 100% 70% / 0.1);
+    --shadow-soft: 0 2px 10px -2px hsl(214 100% 70% / 0.05);
+    --shadow-hover: 0 8px 25px -8px hsl(214 100% 70% / 0.25);
 
     --radius: 0.75rem;
 
-    /* Sidebar with education theme */
-    --sidebar-background: 221 39% 11%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 214 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 221 39% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 221 39% 15%;
-    --sidebar-ring: 214 100% 50%;
+    /* Dark Sidebar with education theme */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 214 100% 70%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 215 25% 27%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 215 25% 27%;
+    --sidebar-ring: 214 100% 70%;
   }
 
   .dark {
