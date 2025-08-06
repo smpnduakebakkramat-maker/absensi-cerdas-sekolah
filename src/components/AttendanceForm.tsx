@@ -22,10 +22,10 @@ interface Student {
 }
 
 const statusOptions = [
-  { value: "present", label: "Hadir" },
-  { value: "excused", label: "Izin" },
-  { value: "sick", label: "Sakit" },
-  { value: "absent", label: "Alpha" },
+  { value: "Hadir", label: "Hadir" },
+  { value: "Izin", label: "Izin" },
+  { value: "Sakit", label: "Sakit" },
+  { value: "Alpha", label: "Alpha" },
 ];
 
 const getDayName = (date: string) => {
@@ -75,7 +75,7 @@ export function AttendanceForm() {
   const loadRecentStudents = async () => {
     try {
       // Get recent students from today's attendance or recent searches
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("attendance")
         .select(`
           students!inner(
@@ -83,7 +83,7 @@ export function AttendanceForm() {
             student_id,
             name,
             gender,
-            classes!inner(name)
+            class_name
           )
         `)
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
@@ -97,7 +97,7 @@ export function AttendanceForm() {
         student_id: record.students.student_id,
         name: record.students.name,
         gender: record.students.gender || "",
-        class_name: record.students.classes?.name || ""
+        class_name: record.students.class_name || "Belum Ditentukan"
       })) || [];
       
       // Remove duplicates based on student ID
@@ -108,6 +108,24 @@ export function AttendanceForm() {
       setRecentStudents(uniqueStudents);
     } catch (error) {
       console.error("Error loading recent students:", error);
+      // If there's an error with recent students, let's try to get some students directly
+      try {
+        const { data: studentsData, error: studentsError } = await (supabase as any)
+          .from("students")
+          .select('id, student_id, name, gender, class_name')
+          .eq("is_active", true)
+          .order('name')
+          .limit(5);
+        
+        if (!studentsError && studentsData) {
+          setRecentStudents(studentsData.map(student => ({
+            ...student,
+            class_name: student.class_name || "Belum Ditentukan"
+          })));
+        }
+      } catch (fallbackError) {
+        console.error("Error loading fallback students:", fallbackError);
+      }
     }
   };
 
@@ -117,19 +135,19 @@ export function AttendanceForm() {
       // Clean search term
       const cleanSearchTerm = searchTerm.trim();
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("students")
         .select(`
           id,
           student_id,
           name,
           gender,
-          classes!inner(name)
+          class_name
         `)
         .or(`name.ilike.%${cleanSearchTerm}%,student_id.ilike.%${cleanSearchTerm}%`)
         .eq("is_active", true)
         .order('name')
-        .limit(20); // Increased limit for better search results
+        .limit(20);
 
       if (error) throw error;
       
@@ -138,7 +156,7 @@ export function AttendanceForm() {
         student_id: student.student_id,
         name: student.name,
         gender: student.gender || "",
-        class_name: (student as any).classes?.name || ""
+        class_name: student.class_name || "Belum Ditentukan"
       })) || [];
       
       setStudents(formattedStudents);
@@ -187,23 +205,25 @@ export function AttendanceForm() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("attendance")
         .upsert({
           student_id: selectedStudent.id,
           date: selectedDate,
           status: attendanceStatus,
-          notes: notes || null,
-          recorded_by: "admin"
+          notes: notes || null
         }, {
           onConflict: "student_id,date"
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
       
       toast({
         title: "Berhasil",
-        description: "Berhasil menyimpan absensi",
+        description: `Berhasil menyimpan absensi untuk ${selectedStudent.name}`,
       });
       
       // Reset form
@@ -211,11 +231,12 @@ export function AttendanceForm() {
       setSearchValue("");
       setAttendanceStatus("");
       setNotes("");
+      setShowRecentStudents(true);
     } catch (error) {
       console.error("Error saving attendance:", error);
       toast({
         title: "Error",
-        description: "Gagal menyimpan data absensi",
+        description: `Gagal menyimpan data absensi: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
