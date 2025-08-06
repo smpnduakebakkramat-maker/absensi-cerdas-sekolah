@@ -56,7 +56,7 @@ export function AttendanceForm() {
   }, []);
 
   useEffect(() => {
-    if (debouncedSearchValue.length > 1) {
+    if (debouncedSearchValue.length > 0) {
       setShowRecentStudents(false);
       fetchStudents(debouncedSearchValue);
     } else {
@@ -114,6 +114,9 @@ export function AttendanceForm() {
   const fetchStudents = async (searchTerm: string) => {
     setIsSearching(true);
     try {
+      // Clean search term
+      const cleanSearchTerm = searchTerm.trim();
+      
       const { data, error } = await supabase
         .from("students")
         .select(`
@@ -123,10 +126,10 @@ export function AttendanceForm() {
           gender,
           classes!inner(name)
         `)
-        .or(`name.ilike.%${searchTerm}%,student_id.ilike.%${searchTerm}%`)
+        .or(`name.ilike.%${cleanSearchTerm}%,student_id.ilike.%${cleanSearchTerm}%`)
         .eq("is_active", true)
         .order('name')
-        .limit(15); // Increased limit for better search results
+        .limit(20); // Increased limit for better search results
 
       if (error) throw error;
       
@@ -153,11 +156,10 @@ export function AttendanceForm() {
 
   const handleStudentSelect = (student: Student) => {
     setSelectedStudent(student);
-    setSearchValue(`${student.name} (${student.student_id})`);
+    setSearchValue("");
     setSearchOpen(false);
     setAttendanceStatus("");
     setNotes("");
-    
     // Update recent students list
     setRecentStudents(prev => {
       const filtered = prev.filter(s => s.id !== student.id);
@@ -170,6 +172,7 @@ export function AttendanceForm() {
     setSearchValue("");
     setAttendanceStatus("");
     setNotes("");
+    setShowRecentStudents(true);
   };
 
   const saveAttendance = async () => {
@@ -274,7 +277,8 @@ export function AttendanceForm() {
 
             {/* Student Search */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Nomor Induk Siswa (NIS)</Label>
+              <Label className="text-slate-700 font-medium">Cari Siswa</Label>
+              <p className="text-xs text-slate-500 mb-2">Ketik NIS atau nama siswa untuk mencari</p>
               <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -284,36 +288,71 @@ export function AttendanceForm() {
                     className="w-full justify-start border-slate-300 h-11"
                   >
                     <Search className="mr-2 h-4 w-4 text-slate-400" />
-                    {searchValue || "Ketik NIS atau nama siswa..."}
+                    {selectedStudent ? 
+                      `${selectedStudent.name} (${selectedStudent.student_id})` : 
+                      (searchValue || "Ketik NIS atau nama siswa...")
+                    }
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Cari siswa..." 
+                      placeholder="Ketik NIS atau nama siswa..." 
                       value={searchValue}
                       onValueChange={setSearchValue}
                       className="h-11"
                     />
                     <CommandList>
                       <CommandEmpty>
-                        {isSearching ? 'Mencari...' : 'Siswa tidak ditemukan.'}
+                        {isSearching ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400 mr-2"></div>
+                            Mencari siswa...
+                          </div>
+                        ) : (
+                          <div className="py-4 text-center text-slate-500">
+                            {searchValue ? 'Siswa tidak ditemukan.' : 'Mulai ketik untuk mencari siswa'}
+                          </div>
+                        )}
                       </CommandEmpty>
-                      <CommandGroup>
-                        {students.map((student) => (
-                          <CommandItem
-                            key={student.id}
-                            value={`${student.student_id} ${student.name}`}
-                            onSelect={() => handleStudentSelect(student)}
-                            className="flex flex-col items-start p-3"
-                          >
-                            <div className="font-medium">{student.name}</div>
-                            <div className="text-sm text-slate-600">
-                              NIS: {student.student_id} • {student.class_name} • {student.gender}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      
+                      {/* Recent Students */}
+                      {showRecentStudents && recentStudents.length > 0 && (
+                        <CommandGroup heading="Siswa Terbaru">
+                          {recentStudents.map((student) => (
+                            <CommandItem
+                              key={`recent-${student.id}`}
+                              value={`${student.student_id} ${student.name}`}
+                              onSelect={() => handleStudentSelect(student)}
+                              className="flex flex-col items-start p-3 hover:bg-slate-50"
+                            >
+                              <div className="font-medium">{student.name}</div>
+                              <div className="text-sm text-slate-600">
+                                NIS: {student.student_id} • {student.class_name} • {student.gender}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                      
+                      {/* Search Results */}
+                      {!showRecentStudents && students.length > 0 && (
+                        <CommandGroup heading={`Hasil Pencarian (${students.length})`}>
+                          {students.map((student) => (
+                            <CommandItem
+                              key={student.id}
+                              value={`${student.student_id} ${student.name}`}
+                              onSelect={() => handleStudentSelect(student)}
+                              className="flex flex-col items-start p-3 hover:bg-slate-50"
+                            >
+                              <div className="font-medium">{student.name}</div>
+                              <div className="text-sm text-slate-600">
+                                NIS: {student.student_id} • {student.class_name} • {student.gender}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
                     </CommandList>
                   </Command>
                 </PopoverContent>
@@ -354,9 +393,19 @@ export function AttendanceForm() {
             {/* Selected Student Info */}
             {selectedStudent && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-800">Siswa Terpilih</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">Siswa Terpilih</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearSelection}
+                    className="text-green-700 hover:text-green-900 hover:bg-green-100 h-6 px-2"
+                  >
+                    Ganti Siswa
+                  </Button>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div><span className="font-medium">Nama:</span> {selectedStudent.name}</div>
