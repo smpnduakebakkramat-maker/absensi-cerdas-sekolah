@@ -2,200 +2,146 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Professional Education Theme - Blue, Black & White Color Scheme
+   Designed for modern educational applications with elegant aesthetics
+   All colors use HSL format for consistency
 */
 
 @layer base {
   :root {
-<<<<<<< HEAD
-    /* Dark Education Theme - Professional and Modern */
-    --background: 222 47% 11%;
-    --foreground: 213 31% 91%;
+    /* Base Colors - Clean White Background with Deep Blue Accents */
+    --background: 0 0% 100%;           /* Pure white background */
+    --foreground: 220 15% 15%;         /* Deep charcoal for text */
 
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
+    /* Card Components - Subtle Blue-tinted White */
+    --card: 210 20% 98%;               /* Very light blue-white */
+    --card-foreground: 220 15% 15%;    /* Deep charcoal text */
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 213 31% 91%;
+    /* Popover Components */
+    --popover: 0 0% 100%;              /* Pure white */
+    --popover-foreground: 220 15% 15%; /* Deep charcoal text */
 
-    /* Primary: Bright Education Blue for dark theme */
-    --primary: 214 100% 70%;
-    --primary-foreground: 222 47% 11%;
+    /* Primary - Professional Education Blue */
+    --primary: 214 84% 56%;            /* Professional blue (#2563eb) */
+    --primary-foreground: 0 0% 100%;   /* White text on blue */
 
-    /* Secondary: Dark slate for depth */
-    --secondary: 215 25% 27%;
-    --secondary-foreground: 213 31% 91%;
+    /* Secondary - Sophisticated Gray-Blue */
+    --secondary: 215 25% 96%;          /* Light blue-gray background */
+    --secondary-foreground: 220 15% 25%; /* Dark text */
 
-    /* Muted: Dark blue-gray for backgrounds */
-    --muted: 215 25% 27%;
-    --muted-foreground: 217 10% 64%;
+    /* Muted - Subtle Background Tones */
+    --muted: 210 40% 96%;              /* Very light blue-gray */
+    --muted-foreground: 215 16% 47%;   /* Medium gray text */
 
-    /* Accent: Bright cyan-blue for highlights */
-    --accent: 212 100% 70%;
-=======
-    /* Dark professional education theme as default */
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Accent - Bright Blue for Highlights */
+    --accent: 212 100% 50%;            /* Bright blue accent */
+    --accent-foreground: 0 0% 100%;    /* White text on accent */
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    /* Destructive - Professional Red */
+    --destructive: 0 84% 60%;          /* Professional red */
+    --destructive-foreground: 0 0% 100%; /* White text */
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    /* Borders and Inputs */
+    --border: 214 32% 91%;             /* Light blue-gray border */
+    --input: 214 32% 91%;              /* Input field background */
+    --ring: 214 84% 56%;               /* Focus ring color */
 
-    /* Primary: Bright Education Blue */
-    --primary: 214 100% 60%;
-    --primary-foreground: 222 47% 11%;
-
-    /* Secondary: Dark blue-gray for depth */
-    --secondary: 217 32% 18%;
-    --secondary-foreground: 210 40% 98%;
-
-    /* Muted: Darker blue-gray for backgrounds */
-    --muted: 217 32% 18%;
-    --muted-foreground: 215 20% 65%;
-
-    /* Accent: Electric blue for highlights */
-    --accent: 212 100% 65%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 32% 18%;
-    --input: 217 32% 18%;
-    --ring: 214 100% 60%;
-
-    /* Education theme colors - Dark professional */
-    --education-primary: 214 100% 60%;
-    --education-secondary: 217 32% 18%;
-    --education-accent: 212 100% 65%;
-    --education-light: 217 32% 20%;
-    --education-success: 142 71% 45%;
-    --education-warning: 38 92% 50%;
+    /* Education Theme Colors - Professional Blue Palette */
+    --education-primary: 214 84% 56%;     /* Main education blue */
+    --education-secondary: 220 15% 15%;   /* Deep charcoal/black */
+    --education-accent: 212 100% 50%;     /* Bright blue accent */
+    --education-light: 210 40% 96%;      /* Light background */
+    --education-success: 142 71% 45%;     /* Professional green */
+    --education-warning: 38 92% 50%;      /* Professional orange */
     
-    /* Beautiful dark gradients for education theme */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 60%), hsl(212 100% 65%));
-    --gradient-secondary: linear-gradient(135deg, hsl(217 32% 18%), hsl(214 100% 60%));
-    --gradient-accent: linear-gradient(135deg, hsl(212 100% 65%), hsl(214 100% 60%));
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%), hsl(217 32% 18%), hsl(214 100% 60% / 0.1));
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 11%), hsl(217 32% 15%));
+    /* Professional Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(212 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 15% 15%), hsl(214 84% 56%));
+    --gradient-accent: linear-gradient(135deg, hsl(212 100% 50%), hsl(214 84% 56%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 96%), hsl(214 84% 56% / 0.1));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 20% 98%));
 
-    /* Elegant shadows with blue tints */
-    --shadow-primary: 0 10px 30px -10px hsl(214 100% 60% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(214 100% 60% / 0.15);
-    --shadow-soft: 0 2px 10px -2px hsl(214 100% 60% / 0.1);
-    --shadow-hover: 0 8px 25px -8px hsl(214 100% 60% / 0.25);
+    /* Elegant Shadows with Blue Tints */
+    --shadow-primary: 0 10px 30px -10px hsl(214 84% 56% / 0.25);
+    --shadow-card: 0 4px 20px -4px hsl(214 84% 56% / 0.08);
+    --shadow-soft: 0 2px 10px -2px hsl(214 84% 56% / 0.05);
+    --shadow-hover: 0 8px 25px -8px hsl(214 84% 56% / 0.15);
+    --shadow-button: 0 2px 8px -2px hsl(214 84% 56% / 0.2);
 
     --radius: 0.75rem;
 
-    /* Sidebar with dark education theme */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 214 100% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 32% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 18%;
-    --sidebar-ring: 214 100% 60%;
+    /* Sidebar - Professional Dark Blue */
+    --sidebar-background: 220 15% 15%;        /* Deep charcoal/black */
+    --sidebar-foreground: 0 0% 95%;           /* Light text */
+    --sidebar-primary: 214 84% 56%;           /* Education blue */
+    --sidebar-primary-foreground: 0 0% 100%;  /* White text */
+    --sidebar-accent: 220 15% 20%;            /* Slightly lighter charcoal */
+    --sidebar-accent-foreground: 0 0% 90%;    /* Light gray text */
+    --sidebar-border: 220 15% 25%;            /* Border color */
+    --sidebar-ring: 214 84% 56%;              /* Focus ring */
   }
 
-  .light {
-    /* Light theme for optional toggle */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+  .dark {
+    /* Optional Dark Mode - Maintains Blue, Black, White Theme */
+    --background: 220 15% 8%;             /* Very dark background */
+    --foreground: 0 0% 95%;               /* Light text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 220 15% 12%;                  /* Dark card background */
+    --card-foreground: 0 0% 95%;          /* Light text */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 220 15% 12%;               /* Dark popover */
+    --popover-foreground: 0 0% 95%;       /* Light text */
 
-    --primary: 214 100% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 214 84% 56%;               /* Same professional blue */
+    --primary-foreground: 0 0% 100%;      /* White text */
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 15% 15%;             /* Dark secondary */
+    --secondary-foreground: 0 0% 90%;     /* Light text */
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 15% 15%;                 /* Dark muted */
+    --muted-foreground: 215 16% 65%;      /* Medium light text */
 
-    --accent: 210 40% 96%;
->>>>>>> 95ceff28557dae644342b6a99048a522a3b9c5e3
-    --accent-foreground: 222 47% 11%;
+    --accent: 212 100% 60%;               /* Brighter accent for dark mode */
+    --accent-foreground: 0 0% 100%;       /* White text */
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;             /* Same red */
+    --destructive-foreground: 0 0% 100%;  /* White text */
 
-    --border: 215 25% 27%;
-    --input: 215 25% 27%;
-    --ring: 214 100% 70%;
+    --border: 220 15% 20%;                /* Dark border */
+    --input: 220 15% 20%;                 /* Dark input */
+    --ring: 214 84% 56%;                  /* Same focus ring */
 
-<<<<<<< HEAD
-    /* Dark Education theme colors */
-    --education-primary: 214 100% 70%;
-    --education-secondary: 215 25% 27%;
-    --education-accent: 212 100% 70%;
-    --education-light: 215 25% 27%;
-    --education-success: 142 76% 36%;
-    --education-warning: 38 92% 50%;
-    
-    /* Beautiful dark gradients for education theme */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 70%), hsl(215 25% 27%));
-    --gradient-secondary: linear-gradient(135deg, hsl(215 25% 27%), hsl(212 100% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(212 100% 70%), hsl(214 100% 70%));
-    --gradient-hero: linear-gradient(135deg, hsl(214 100% 70%), hsl(215 25% 27%), hsl(212 100% 70%));
-    --gradient-card: linear-gradient(145deg, hsl(224 71% 4%), hsl(215 25% 27%));
+    /* Dark mode education colors */
+    --education-primary: 214 84% 56%;     /* Same blue */
+    --education-secondary: 220 15% 15%;   /* Dark secondary */
+    --education-accent: 212 100% 60%;     /* Brighter accent */
+    --education-light: 220 15% 20%;       /* Dark light */
+    --education-success: 142 71% 45%;     /* Same green */
+    --education-warning: 38 92% 50%;      /* Same orange */
 
-    /* Elegant dark shadows with blue tints */
-    --shadow-primary: 0 10px 30px -10px hsl(214 100% 70% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(214 100% 70% / 0.1);
-    --shadow-soft: 0 2px 10px -2px hsl(214 100% 70% / 0.05);
-    --shadow-hover: 0 8px 25px -8px hsl(214 100% 70% / 0.25);
+    /* Dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(212 100% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 15% 15%), hsl(214 84% 56%));
+    --gradient-accent: linear-gradient(135deg, hsl(212 100% 60%), hsl(214 84% 56%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 15% 8%), hsl(220 15% 15%), hsl(214 84% 56% / 0.1));
+    --gradient-card: linear-gradient(145deg, hsl(220 15% 12%), hsl(220 15% 15%));
 
-    --radius: 0.75rem;
+    /* Dark shadows */
+    --shadow-primary: 0 10px 30px -10px hsl(214 84% 56% / 0.3);
+    --shadow-card: 0 4px 20px -4px hsl(214 84% 56% / 0.15);
+    --shadow-soft: 0 2px 10px -2px hsl(214 84% 56% / 0.1);
+    --shadow-hover: 0 8px 25px -8px hsl(214 84% 56% / 0.25);
+    --shadow-button: 0 2px 8px -2px hsl(214 84% 56% / 0.3);
 
-    /* Dark Sidebar with education theme */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 214 100% 70%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 215 25% 27%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 215 25% 27%;
-    --sidebar-ring: 214 100% 70%;
-=======
-    /* Education theme colors - Light Mode */
-    --education-primary: 214 100% 50%;
-    --education-secondary: 221 39% 11%;
-    --education-accent: 212 100% 60%;
-    --education-light: 214 32% 91%;
-    --education-success: 142 76% 36%;
-    --education-warning: 38 92% 50%;
-    
-    /* Light gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 50%), hsl(221 39% 11%));
-    --gradient-secondary: linear-gradient(135deg, hsl(221 39% 11%), hsl(212 100% 60%));
-    --gradient-accent: linear-gradient(135deg, hsl(212 100% 60%), hsl(214 100% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(214 100% 50%), hsl(221 39% 11%), hsl(212 100% 60%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(214 32% 96%));
-
-    /* Light shadows */
-    --shadow-primary: 0 10px 30px -10px hsl(214 100% 50% / 0.25);
-    --shadow-card: 0 4px 20px -4px hsl(214 100% 50% / 0.08);
-    --shadow-soft: 0 2px 10px -2px hsl(214 100% 50% / 0.05);
-    --shadow-hover: 0 8px 25px -8px hsl(214 100% 50% / 0.2);
-
-    --sidebar-background: 221 39% 11%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 214 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 221 39% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 221 39% 15%;
-    --sidebar-ring: 214 100% 50%;
->>>>>>> 95ceff28557dae644342b6a99048a522a3b9c5e3
+    /* Dark sidebar - even darker */
+    --sidebar-background: 220 15% 5%;         /* Very dark background */
+    --sidebar-foreground: 0 0% 95%;           /* Light text */
+    --sidebar-primary: 214 84% 56%;           /* Same blue */
+    --sidebar-primary-foreground: 0 0% 100%;  /* White text */
+    --sidebar-accent: 220 15% 12%;            /* Dark accent */
+    --sidebar-accent-foreground: 0 0% 90%;    /* Light text */
+    --sidebar-border: 220 15% 15%;            /* Border */
+    --sidebar-ring: 214 84% 56%;              /* Focus ring */
   }
 }
 
