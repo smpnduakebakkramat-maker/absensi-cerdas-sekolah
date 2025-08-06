@@ -23,6 +23,67 @@ interface Student {
   classes?: { name: string };
 }
 
+// Helper functions for class name parsing
+const extractGradeLevel = (className: string): number | null => {
+  const match = className.match(/^([789])/);
+  return match ? parseInt(match[1]) : null;
+};
+
+const extractSection = (className: string): string | null => {
+  const match = className.match(/([A-Z])$/);
+  return match ? match[1] : null;
+};
+
+// Fallback function to create class directly if database function is not available
+const createClassFallback = async (className: string) => {
+  const gradeLevel = extractGradeLevel(className);
+  const section = extractSection(className);
+  
+  const { data, error } = await (supabase as any)
+    .from('classes')
+    .insert({
+      name: className,
+      grade_level: gradeLevel,
+      section: section,
+      academic_year: '2024/2025',
+      is_active: true
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data.id;
+};
+
+// Get or create class with fallback
+const getOrCreateClass = async (className: string) => {
+  try {
+    // First try the database function
+    const { data: classId, error } = await (supabase as any)
+      .rpc('get_or_create_class', { class_name: className });
+    
+    if (!error && classId) {
+      return classId;
+    }
+  } catch (error) {
+    console.log('Database function not available, using fallback');
+  }
+  
+  // Fallback: check if class exists, if not create it
+  let { data: existingClass } = await (supabase as any)
+    .from('classes')
+    .select('id')
+    .eq('name', className)
+    .single();
+    
+  if (existingClass) {
+    return existingClass.id;
+  }
+  
+  // Create new class
+  return await createClassFallback(className);
+};
+
 const DataSiswa = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -259,12 +320,20 @@ const DataSiswa = () => {
                                 gender.toString().trim() === 'P' ? 'Perempuan' : 
                                 gender.toString().trim();
 
-        const classData = classes.find(c => 
-          c.name.toLowerCase().trim() === className.toString().toLowerCase().trim()
+        const classNameTrimmed = className.toString().trim();
+        let classData = classes.find(c => 
+          c.name.toLowerCase().trim() === classNameTrimmed.toLowerCase()
         );
+        
+        // If class doesn't exist, we'll create it during import
         if (!classData) {
-          errors.push(`Baris ${rowNumber}: Kelas "${className}" tidak ditemukan`);
-          continue;
+          // Create a temporary class object for validation
+          classData = {
+            id: `temp_${classNameTrimmed}`, // Temporary ID
+            name: classNameTrimmed,
+            grade_level: extractGradeLevel(classNameTrimmed),
+            section: extractSection(classNameTrimmed)
+          };
         }
 
         const duplicateInCurrent = validStudents.find(s => s.student_id === nis.toString().trim());
@@ -332,32 +401,71 @@ const DataSiswa = () => {
     try {
       let studentsToProcess = [...importPreview.validStudents];
       
+      // Handle duplicate updates with dynamic class creation
       if (handleDuplicates === 'update' && importPreview.duplicates.length > 0) {
         for (const duplicate of importPreview.duplicates) {
           const existingStudent = students.find(s => s.student_id === duplicate.student_id);
           if (existingStudent) {
-            const classData = classes.find(c => c.name === duplicate.className);
-            const { error } = await (supabase as any)
-              .from('students')
-              .update({
-                name: duplicate.name,
-                class_id: classData?.id,
-                gender: duplicate.gender
-              })
-              .eq('id', existingStudent.id);
+            try {
+              // Get or create class using fallback function
+              const classId = await getOrCreateClass(duplicate.className);
             
-            if (error) throw error;
+              const { error } = await (supabase as any)
+                .from('students')
+                .update({
+                  name: duplicate.name,
+                  class_id: classId,
+                  gender: duplicate.gender
+                })
+                .eq('id', existingStudent.id);
+              
+              if (error) throw error;
+            } catch (error) {
+              console.error('Error updating duplicate student:', error);
+              toast({
+                title: "Error",
+                description: `Gagal mengupdate siswa ${duplicate.name}`,
+                variant: "destructive",
+              });
+            }
           }
         }
       }
 
+      // Process new students with dynamic class creation
       if (studentsToProcess.length > 0) {
-        const studentsData = studentsToProcess.map(({ rowNumber, className, ...student }) => student);
-        const { error } = await (supabase as any)
-          .from('students')
-          .insert(studentsData);
+        const studentsWithRealClassIds = [];
+        
+        for (const student of studentsToProcess) {
+          try {
+            // Get or create class using fallback function
+            const classId = await getOrCreateClass(student.className);
+          
+            studentsWithRealClassIds.push({
+              student_id: student.student_id,
+              name: student.name,
+              class_id: classId,
+              gender: student.gender,
+              is_active: student.is_active
+            });
+          } catch (error) {
+            console.error('Error creating class for student:', error);
+            toast({
+              title: "Error",
+              description: `Gagal membuat kelas ${student.className} untuk siswa ${student.name}`,
+              variant: "destructive",
+            });
+          }
+        }
+        
+        // Insert students with real class IDs
+        if (studentsWithRealClassIds.length > 0) {
+          const { error } = await (supabase as any)
+            .from('students')
+            .insert(studentsWithRealClassIds);
 
-        if (error) throw error;
+          if (error) throw error;
+        }
       }
 
       const totalProcessed = studentsToProcess.length + 
@@ -368,7 +476,9 @@ const DataSiswa = () => {
         description: `${totalProcessed} siswa berhasil diproses`,
       });
 
-      fetchStudents();
+      // Refresh data
+      await fetchClasses(); // Refresh classes to show newly created ones
+      await fetchStudents();
       setImportPreview({ validStudents: [], errors: [], duplicates: [], showPreview: false });
 
     } catch (error) {
@@ -386,18 +496,60 @@ const DataSiswa = () => {
   const downloadTemplate = () => {
     const template = [
       ['NIS', 'Nama Lengkap', 'Kelas', 'Jenis Kelamin'],
-      ['12345', 'John Doe', '7A', 'Laki-laki'],
-      ['12346', 'Jane Smith', '7B', 'Perempuan'],
+      ['12345', 'Ahmad Rizki', '7A', 'Laki-laki'],
+      ['12346', 'Siti Nurhaliza', '7B', 'Perempuan'],
+      ['12347', 'Budi Santoso', '8A', 'Laki-laki'],
+      ['12348', 'Dewi Sartika', '8B', 'Perempuan'],
+      ['12349', 'Andi Pratama', '9A', 'Laki-laki'],
+      ['12350', 'Maya Sari', '9C', 'Perempuan'],
+      ['', '', '', ''],
+      ['PETUNJUK PENGISIAN:', '', '', ''],
+      ['1. NIS: Nomor Induk Siswa (harus angka)', '', '', ''],
+      ['2. Nama Lengkap: Nama siswa (minimal 2 karakter)', '', '', ''],
+      ['3. Kelas: Nama kelas (contoh: 7A, 8B, 9C)', '', '', ''],
+      ['   - Kelas akan dibuat otomatis jika belum ada', '', '', ''],
+      ['4. Jenis Kelamin: Laki-laki atau Perempuan', '', '', ''],
+      ['   - Bisa juga menggunakan L atau P', '', '', ''],
+      ['', '', '', ''],
+      ['CATATAN PENTING:', '', '', ''],
+      ['- Pastikan format header sesuai dengan template', '', '', ''],
+      ['- Hapus baris petunjuk ini sebelum import', '', '', ''],
+      ['- Maksimal ukuran file 5MB', '', '', ''],
+      ['- Format file harus .xlsx atau .xls', '', '', '']
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(template);
+    
+    // Set column widths for better readability
+    const colWidths = [
+      { wch: 15 }, // NIS
+      { wch: 25 }, // Nama Lengkap
+      { wch: 10 }, // Kelas
+      { wch: 15 }  // Jenis Kelamin
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Style the header row
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "366092" } },
+      alignment: { horizontal: "center" }
+    };
+    
+    // Apply header styling
+    ['A1', 'B1', 'C1', 'D1'].forEach(cell => {
+      if (ws[cell]) {
+        ws[cell].s = headerStyle;
+      }
+    });
+    
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template Data Siswa");
-    XLSX.writeFile(wb, "template_data_siswa.xlsx");
+    XLSX.writeFile(wb, "template_data_siswa_smpn3kebakkramat.xlsx");
 
     toast({
-      title: "Template Downloaded",
-      description: "Template Excel berhasil didownload",
+      title: "Template Berhasil Diunduh",
+      description: "Template Excel dengan petunjuk lengkap telah didownload",
     });
   };
 
