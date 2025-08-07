@@ -247,37 +247,63 @@ export function AttendanceForm() {
   const handleCancel = () => {
     setSelectedStudent(null);
     setSearchValue("");
-    setAttendanceStatus("");
-    setNotes("");
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" className="text-slate-600">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-800">Input Absensi Siswa</h1>
-            <p className="text-sm text-slate-600">SMPN 2 Kebakkramat</p>
-          </div>
-        </div>
+  useEffect(() => {
+    loadRecentStudents();
+  }, []);
 
-        {/* Form Card */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="bg-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-2 text-slate-700">
-              <div className="w-5 h-5 bg-blue-600 rounded"></div>
-              Form Absensi Harian
-            </CardTitle>
+  useEffect(() => {
+    if (searchValue.length > 0) {
+      setShowRecentStudents(false);
+      fetchStudents(searchValue);
+    } else {
+      setStudents([]);
+      setShowRecentStudents(true);
+    }
+  }, [searchValue]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="max-w-2xl mx-auto p-3 sm:p-4 lg:p-6">
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg">
+                  <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg sm:text-xl font-bold text-slate-800">
+                    Form Absensi Siswa
+                  </CardTitle>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    {getDayName(selectedDate)},{' '}
+                    {new Date(selectedDate).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-slate-600 self-start sm:self-auto">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs sm:text-sm font-medium">
+                  {new Date().toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            {/* Date and Day */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-slate-700 font-medium">Tanggal</Label>
+                <Label htmlFor="date" className="text-slate-700 font-medium">
+                  Tanggal
+                </Label>
                 <Input
                   id="date"
                   type="date"
@@ -296,79 +322,76 @@ export function AttendanceForm() {
               </div>
             </div>
 
-            {/* Student Search */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Cari Siswa</Label>
-              <p className="text-xs text-slate-500 mb-2">Ketik NIS atau nama siswa untuk mencari</p>
+              <Label className="text-slate-700 font-medium text-sm sm:text-base">
+                Pilih Siswa
+              </Label>
               <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={searchOpen}
-                    className="w-full justify-start border-slate-300 h-11"
+                    className="w-full justify-between border-slate-300 h-10 sm:h-11 text-left font-normal text-sm sm:text-base"
                   >
-                    <Search className="mr-2 h-4 w-4 text-slate-400" />
-                    {selectedStudent ? 
-                      `${selectedStudent.name} (${selectedStudent.student_id})` : 
-                      (searchValue || "Ketik NIS atau nama siswa...")
-                    }
+                    {selectedStudent ? (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <User className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                        <span className="truncate">
+                          {selectedStudent.name} - {selectedStudent.student_id}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-500 min-w-0">
+                        <Search className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">
+                          Cari siswa berdasarkan nama atau NIS...
+                        </span>
+                      </div>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
-                    <CommandInput 
-                      placeholder="Ketik NIS atau nama siswa..." 
+                    <CommandInput
+                      placeholder="Ketik NIS atau nama siswa..."
                       value={searchValue}
                       onValueChange={setSearchValue}
                       className="h-11"
                     />
-                    <CommandList>
-                      <CommandEmpty>
-                        {isSearching ? (
-                          <div className="flex items-center justify-center py-4">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400 mr-2"></div>
-                            Mencari siswa...
-                          </div>
-                        ) : (
-                          <div className="py-4 text-center text-slate-500">
-                            {searchValue ? 'Siswa tidak ditemukan.' : 'Mulai ketik untuk mencari siswa'}
-                          </div>
-                        )}
-                      </CommandEmpty>
-                      
-                      {/* Recent Students */}
-                      {showRecentStudents && recentStudents.length > 0 && (
+                    <CommandList className="max-h-[250px] sm:max-h-[300px]">
+                      {isSearching && (
+                        <div className="flex items-center justify-center py-6">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
+                        </div>
+                      )}
+
+                      {!isSearching && showRecentStudents && recentStudents.length > 0 && (
                         <CommandGroup heading="Siswa Terbaru">
                           {recentStudents.map((student) => (
                             <CommandItem
-                              key={`recent-${student.id}`}
-                              value={`${student.student_id} ${student.name}`}
-                              onSelect={() => handleStudentSelect(student)}
-                              className="flex flex-col items-start p-3 hover:bg-slate-50"
-                            >
-                              <div className="font-medium">{student.name}</div>
-                              <div className="text-sm text-slate-600">
-                                NIS: {student.student_id} • {student.class_name} • {student.gender}
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                      
-                      {/* Search Results */}
-                      {!showRecentStudents && students.length > 0 && (
-                        <CommandGroup heading={`Hasil Pencarian (${students.length})`}>
-                          {students.map((student) => (
-                            <CommandItem
                               key={student.id}
-                              value={`${student.student_id} ${student.name}`}
+                              value={`${student.name} ${student.student_id}`}
                               onSelect={() => handleStudentSelect(student)}
-                              className="flex flex-col items-start p-3 hover:bg-slate-50"
+                              className="cursor-pointer touch-manipulation p-3 sm:p-2"
                             >
-                              <div className="font-medium">{student.name}</div>
-                              <div className="text-sm text-slate-600">
-                                NIS: {student.student_id} • {student.class_name} • {student.gender}
+                              <div className="flex items-center justify-between w-full min-w-0">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-medium text-slate-800 text-sm sm:text-base truncate">
+                                      {student.name}
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-slate-500 truncate">
+                                      NIS: {student.student_id} • {student.class_name}
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
+                                  {student.gender}
+                                </Badge>
                               </div>
                             </CommandItem>
                           ))}
@@ -382,14 +405,14 @@ export function AttendanceForm() {
 
             {/* Attendance Status */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Status Kehadiran</Label>
+              <Label className="text-slate-700 font-medium text-sm sm:text-base">Status Kehadiran</Label>
               <Select value={attendanceStatus} onValueChange={setAttendanceStatus}>
-                <SelectTrigger className="border-slate-300 h-11">
+                <SelectTrigger className="border-slate-300 h-10 sm:h-11 text-sm sm:text-base">
                   <SelectValue placeholder="Pilih status kehadiran" />
                 </SelectTrigger>
                 <SelectContent>
                   {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={option.value} value={option.value} className="text-sm sm:text-base">
                       {option.label}
                     </SelectItem>
                   ))}
@@ -399,12 +422,12 @@ export function AttendanceForm() {
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">Keterangan</Label>
+              <Label className="text-slate-700 font-medium text-sm sm:text-base">Keterangan</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Masukkan keterangan atau alasan status kehadiran (opsional)"
-                className="min-h-[100px] border-slate-300 resize-none"
+                className="min-h-[80px] sm:min-h-[100px] border-slate-300 resize-none text-sm sm:text-base"
               />
               <p className="text-xs text-slate-500">
                 Contoh: Demam tinggi, Ke dokter, Acara keluarga, dll.
@@ -413,22 +436,22 @@ export function AttendanceForm() {
 
             {/* Selected Student Info */}
             {selectedStudent && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-green-800">Siswa Terpilih</span>
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    <span className="font-medium text-green-800 text-sm sm:text-base">Siswa Terpilih</span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={clearSelection}
-                    className="text-green-700 hover:text-green-900 hover:bg-green-100 h-6 px-2"
+                    className="text-green-700 hover:text-green-900 hover:bg-green-100 h-6 px-2 text-xs sm:text-sm"
                   >
                     Ganti Siswa
                   </Button>
                 </div>
-                <div className="space-y-1 text-sm">
+                <div className="space-y-1 text-xs sm:text-sm">
                   <div><span className="font-medium">Nama:</span> {selectedStudent.name}</div>
                   <div><span className="font-medium">NIS:</span> {selectedStudent.student_id}</div>
                   <div><span className="font-medium">Kelas:</span> {selectedStudent.class_name}</div>
@@ -438,23 +461,23 @@ export function AttendanceForm() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button 
                 variant="outline" 
                 onClick={handleCancel}
-                className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 h-10 sm:h-11 text-sm sm:text-base touch-manipulation"
               >
                 Batal
               </Button>
               <Button 
                 onClick={saveAttendance} 
                 disabled={loading || !selectedStudent || !attendanceStatus}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 h-10 sm:h-11 text-sm sm:text-base touch-manipulation"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Menyimpan...
+                    <span className="text-sm sm:text-base">Menyimpan...</span>
                   </div>
                 ) : (
                   "Simpan Absensi"
