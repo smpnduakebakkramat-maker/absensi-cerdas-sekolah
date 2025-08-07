@@ -28,12 +28,18 @@ export default function Login() {
           fullName: "Administrator SMPN 3 KEBAKKRAMAT"
         }));
         
+        // Trigger auth state update by dispatching custom event
+        window.dispatchEvent(new Event('auth-state-change'));
+        
         toast({
           title: "Login Berhasil",
           description: "Selamat datang di Sistem Absensi SMPN 3 KEBAKKRAMAT",
         });
         
-        navigate("/");
+        // Small delay to ensure localStorage is written before navigation
+        setTimeout(() => {
+          navigate("/");
+        }, 100);
       } else {
         toast({
           title: "Login Gagal",

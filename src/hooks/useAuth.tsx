@@ -13,13 +13,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
-    const loginStatus = localStorage.getItem("isAdminLoggedIn");
-    const user = localStorage.getItem("adminUser");
-    
-    if (loginStatus === "true" && user) {
-      setIsLoggedIn(true);
-      setAdminUser(JSON.parse(user));
-    }
+    const checkAuthState = () => {
+      const loginStatus = localStorage.getItem("isAdminLoggedIn");
+      const user = localStorage.getItem("adminUser");
+      
+      if (loginStatus === "true" && user) {
+        setIsLoggedIn(true);
+        setAdminUser(JSON.parse(user));
+      } else {
+        setIsLoggedIn(false);
+        setAdminUser(null);
+      }
+    };
+
+    // Check initial state
+    checkAuthState();
+
+    // Listen for auth state changes
+    const handleAuthChange = () => {
+      checkAuthState();
+    };
+
+    window.addEventListener('auth-state-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('auth-state-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, []);
 
   const logout = () => {
