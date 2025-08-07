@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Calendar, Download, Filter } from "lucide-react";
+import { BarChart3, Calendar, Download, Filter, Edit, Trash2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
@@ -30,6 +33,8 @@ const Laporan = () => {
   const [loading, setLoading] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
   const [todayStats, setTodayStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0, total: 0 });
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -211,6 +216,98 @@ const Laporan = () => {
     });
   };
 
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'Hadir':
+        return 'default';
+      case 'Izin':
+        return 'secondary';
+      case 'Sakit':
+        return 'outline';
+      case 'Alpha':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusCardColor = (status: string) => {
+    switch (status) {
+      case 'Alpha':
+        return 'bg-red-500 text-white';
+      case 'Sakit':
+        return 'bg-yellow-500 text-white';
+      case 'Izin':
+        return 'bg-blue-500 text-white';
+      default:
+        return 'bg-green-500 text-white';
+    }
+  };
+
+  const handleEditRecord = (record: any) => {
+    setEditingRecord({ ...record });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateRecord = async () => {
+    if (!editingRecord) return;
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .update({
+          status: editingRecord.status,
+          notes: editingRecord.notes
+        })
+        .eq('id', editingRecord.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Berhasil",
+        description: "Data absensi berhasil diperbarui",
+      });
+
+      setEditDialogOpen(false);
+      setEditingRecord(null);
+      fetchTodayAttendance();
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui data absensi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRecord = async (recordId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data absensi ini?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', recordId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Berhasil",
+        description: "Data absensi berhasil dihapus",
+      });
+
+      fetchTodayAttendance();
+    } catch (error) {
+      console.error('Error deleting attendance:', error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus data absensi",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -293,9 +390,7 @@ const Laporan = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge 
-                          variant={record.status === 'Hadir' ? 'default' : 
-                                  record.status === 'Izin' ? 'secondary' : 
-                                  record.status === 'Sakit' ? 'outline' : 'destructive'}
+                          className={getStatusCardColor(record.status)}
                         >
                           {record.status}
                         </Badge>
@@ -304,6 +399,24 @@ const Laporan = () => {
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditRecord(record)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteRecord(record.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -498,6 +611,58 @@ const Laporan = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Data Absensi</DialogTitle>
+              <DialogDescription>
+                Ubah status kehadiran dan keterangan untuk {editingRecord?.student_name}
+              </DialogDescription>
+            </DialogHeader>
+            {editingRecord && (
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status Kehadiran</Label>
+                  <Select
+                    value={editingRecord.status}
+                    onValueChange={(value) => setEditingRecord({ ...editingRecord, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Hadir">Hadir</SelectItem>
+                      <SelectItem value="Izin">Izin</SelectItem>
+                      <SelectItem value="Sakit">Sakit</SelectItem>
+                      <SelectItem value="Alpha">Alpha</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="notes">Keterangan</Label>
+                  <Input
+                    id="notes"
+                    value={editingRecord.notes || ''}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, notes: e.target.value })}
+                    placeholder="Keterangan tambahan (opsional)"
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Batal
+              </Button>
+              <Button onClick={handleUpdateRecord}>
+                <Save className="h-4 w-4 mr-2" />
+                Simpan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
