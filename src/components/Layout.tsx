@@ -9,7 +9,8 @@ import {
   School,
   LogOut,
   User,
-  Home
+  Home,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,11 +31,32 @@ export function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { adminUser, logout } = useAuth();
+  const { logout, adminUser, refreshSession } = useAuth();
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleRefreshSession = () => {
+    refreshSession();
+  };
+
+  const getSessionInfo = () => {
+    const loginTime = localStorage.getItem("adminLoginTime");
+    if (loginTime) {
+      const loginDate = new Date(parseInt(loginTime));
+      const now = new Date();
+      const hoursLoggedIn = Math.floor((now.getTime() - loginDate.getTime()) / (1000 * 60 * 60));
+      const minutesLoggedIn = Math.floor(((now.getTime() - loginDate.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hoursLoggedIn > 0) {
+        return `${hoursLoggedIn}j ${minutesLoggedIn}m`;
+      } else {
+        return `${minutesLoggedIn}m`;
+      }
+    }
+    return "";
   };
 
   return (
@@ -66,6 +88,18 @@ export function Layout({ children }: LayoutProps) {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-4">
+            <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Sesi: {getSessionInfo()}</span>
+              <Button
+                onClick={handleRefreshSession}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-education-primary/10"
+                title="Refresh Session"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
             <div className="hidden sm:flex items-center gap-2 text-education-secondary">
               <User className="h-4 w-4" />
               <span className="text-sm font-medium">{adminUser?.fullName}</span>

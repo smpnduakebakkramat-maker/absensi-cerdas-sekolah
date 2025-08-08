@@ -21,12 +21,17 @@ export default function Login() {
     try {
       // For now, using simple check - in production use proper password hashing
       if (username === "admin" && password === "@Smp2025") {
-        // Store login status in localStorage
+        const currentTime = Date.now();
+        
+        // Store login status and timestamp in localStorage
         localStorage.setItem("isAdminLoggedIn", "true");
         localStorage.setItem("adminUser", JSON.stringify({
           username: "admin",
-          fullName: "Administrator SMPN 3 KEBAKKRAMAT"
+          fullName: "Administrator SMPN 3 KEBAKKRAMAT",
+          loginTime: currentTime
         }));
+        localStorage.setItem("adminLoginTime", currentTime.toString());
+        localStorage.setItem("adminLastActivity", currentTime.toString());
         
         // Trigger auth state update by dispatching custom event
         window.dispatchEvent(new Event('auth-state-change'));
