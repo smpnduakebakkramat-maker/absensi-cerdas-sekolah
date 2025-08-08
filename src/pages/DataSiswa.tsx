@@ -517,47 +517,50 @@ const DataSiswa = () => {
                       Tambah Siswa
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>
+                  <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="pb-4">
+                      <DialogTitle className="text-lg md:text-xl">
                         {editingStudent ? "Edit Data Siswa" : "Tambah Siswa Baru"}
                       </DialogTitle>
-                      <DialogDescription>
+                      <DialogDescription className="text-sm md:text-base">
                         Lengkapi formulir di bawah ini untuk {editingStudent ? "mengupdate" : "menambahkan"} data siswa
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="student_id">NIS</Label>
+                    <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="student_id" className="text-sm font-medium">NIS</Label>
                         <Input
                           id="student_id"
                           value={formData.student_id}
                           onChange={(e) => setFormData({...formData, student_id: e.target.value})}
                           placeholder="Nomor Induk Siswa"
+                          className="h-10 text-base md:text-sm"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="name">Nama Lengkap</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-medium">Nama Lengkap</Label>
                         <Input
                           id="name"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                           placeholder="Nama lengkap siswa"
+                          className="h-10 text-base md:text-sm"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="class_name">Kelas</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="class_name" className="text-sm font-medium">Kelas</Label>
                         <Input
                           id="class_name"
                           value={formData.class_name}
                           onChange={(e) => setFormData({...formData, class_name: e.target.value})}
                           placeholder="Nama kelas (contoh: 7A, 8B, 9C)"
+                          className="h-10 text-base md:text-sm"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="gender">Jenis Kelamin</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="gender" className="text-sm font-medium">Jenis Kelamin</Label>
                         <Select value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-10 text-base md:text-sm">
                             <SelectValue placeholder="Pilih jenis kelamin" />
                           </SelectTrigger>
                           <SelectContent>
@@ -567,17 +570,21 @@ const DataSiswa = () => {
                         </Select>
                       </div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setIsAddDialogOpen(false);
                           setEditingStudent(null);
                         }}
+                        className="w-full sm:w-auto h-10"
                       >
                         Batal
                       </Button>
-                      <Button onClick={handleSaveStudent}>
+                      <Button 
+                        onClick={handleSaveStudent}
+                        className="w-full sm:w-auto h-10 bg-gradient-to-r from-education-primary to-education-secondary hover:from-education-primary/90 hover:to-education-secondary/90"
+                      >
                         {editingStudent ? "Update" : "Simpan"}
                       </Button>
                     </div>
