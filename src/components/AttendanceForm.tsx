@@ -311,6 +311,32 @@ export function AttendanceForm() {
               </div>
             </div>
 
+            {/* Selected Student Info */}
+            {selectedStudent && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    <span className="font-medium text-green-800 text-sm sm:text-base">Siswa Terpilih</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearSelection}
+                    className="text-green-700 hover:text-green-900 hover:bg-green-100 h-6 px-2 text-xs sm:text-sm"
+                  >
+                    Ganti Siswa
+                  </Button>
+                </div>
+                <div className="space-y-1 text-xs sm:text-sm">
+                  <div><span className="font-medium">Nama:</span> {selectedStudent.name}</div>
+                  <div><span className="font-medium">NIS:</span> {selectedStudent.student_id}</div>
+                  <div><span className="font-medium">Kelas:</span> {selectedStudent.class_name}</div>
+                  <div><span className="font-medium">Jenis Kelamin:</span> {selectedStudent.gender}</div>
+                </div>
+              </div>
+            )}
+
             {/* Attendance Status */}
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium text-sm sm:text-base">Status Kehadiran</Label>
@@ -347,32 +373,6 @@ export function AttendanceForm() {
                 Contoh: Demam tinggi, Ke dokter, Acara keluarga, dll.
               </p>
             </div>
-
-            {/* Selected Student Info */}
-            {selectedStudent && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                    <span className="font-medium text-green-800 text-sm sm:text-base">Siswa Terpilih</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearSelection}
-                    className="text-green-700 hover:text-green-900 hover:bg-green-100 h-6 px-2 text-xs sm:text-sm"
-                  >
-                    Ganti Siswa
-                  </Button>
-                </div>
-                <div className="space-y-1 text-xs sm:text-sm">
-                  <div><span className="font-medium">Nama:</span> {selectedStudent.name}</div>
-                  <div><span className="font-medium">NIS:</span> {selectedStudent.student_id}</div>
-                  <div><span className="font-medium">Kelas:</span> {selectedStudent.class_name}</div>
-                  <div><span className="font-medium">Jenis Kelamin:</span> {selectedStudent.gender}</div>
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
