@@ -40,28 +40,19 @@ export function AttendanceForm() {
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
-  const [recentStudents, setRecentStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [showRecentStudents, setShowRecentStudents] = useState(true);
   const debouncedSearchValue = useDebounce(searchValue, 150); // Faster debounce
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Load recent students on component mount
-  useEffect(() => {
-    loadRecentStudents();
-  }, []);
-
   useEffect(() => {
     if (debouncedSearchValue.length > 0) {
-      setShowRecentStudents(false);
       fetchStudents(debouncedSearchValue);
     } else {
       setStudents([]);
-      setShowRecentStudents(true);
     }
   }, [debouncedSearchValue]);
 
@@ -71,63 +62,6 @@ export function AttendanceForm() {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
   }, [searchOpen]);
-
-  const loadRecentStudents = async () => {
-    try {
-      // Get recent students from today's attendance or recent searches
-      const { data, error } = await (supabase as any)
-        .from("attendance")
-        .select(`
-          students!inner(
-            id,
-            student_id,
-            name,
-            gender,
-            class_name
-          )
-        `)
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      
-      const formattedStudents = data?.map((record: any) => ({
-        id: record.students.id,
-        student_id: record.students.student_id,
-        name: record.students.name,
-        gender: record.students.gender || "",
-        class_name: record.students.class_name || "Belum Ditentukan"
-      })) || [];
-      
-      // Remove duplicates based on student ID
-      const uniqueStudents = formattedStudents.filter((student, index, self) => 
-        index === self.findIndex(s => s.id === student.id)
-      );
-      
-      setRecentStudents(uniqueStudents);
-    } catch (error) {
-      console.error("Error loading recent students:", error);
-      // If there's an error with recent students, let's try to get some students directly
-      try {
-        const { data: studentsData, error: studentsError } = await (supabase as any)
-          .from("students")
-          .select('id, student_id, name, gender, class_name')
-          .eq("is_active", true)
-          .order('name')
-          .limit(5);
-        
-        if (!studentsError && studentsData) {
-          setRecentStudents(studentsData.map(student => ({
-            ...student,
-            class_name: student.class_name || "Belum Ditentukan"
-          })));
-        }
-      } catch (fallbackError) {
-        console.error("Error loading fallback students:", fallbackError);
-      }
-    }
-  };
 
   const fetchStudents = async (searchTerm: string) => {
     setIsSearching(true);
@@ -178,11 +112,6 @@ export function AttendanceForm() {
     setSearchOpen(false);
     setAttendanceStatus("");
     setNotes("");
-    // Update recent students list
-    setRecentStudents(prev => {
-      const filtered = prev.filter(s => s.id !== student.id);
-      return [student, ...filtered].slice(0, 5);
-    });
   };
 
   const clearSelection = () => {
@@ -190,7 +119,6 @@ export function AttendanceForm() {
     setSearchValue("");
     setAttendanceStatus("");
     setNotes("");
-    setShowRecentStudents(true);
   };
 
   const saveAttendance = async () => {
@@ -231,7 +159,6 @@ export function AttendanceForm() {
       setSearchValue("");
       setAttendanceStatus("");
       setNotes("");
-      setShowRecentStudents(true);
     } catch (error) {
       console.error("Error saving attendance:", error);
       toast({
@@ -248,20 +175,6 @@ export function AttendanceForm() {
     setSelectedStudent(null);
     setSearchValue("");
   };
-
-  useEffect(() => {
-    loadRecentStudents();
-  }, []);
-
-  useEffect(() => {
-    if (searchValue.length > 0) {
-      setShowRecentStudents(false);
-      fetchStudents(searchValue);
-    } else {
-      setStudents([]);
-      setShowRecentStudents(true);
-    }
-  }, [searchValue]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -346,7 +259,7 @@ export function AttendanceForm() {
                 </div>
                 
                 {/* Search Results */}
-                {(searchValue || showRecentStudents) && (
+                {searchValue && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {isSearching ? (
                       <div className="flex items-center justify-center py-6">
@@ -354,45 +267,11 @@ export function AttendanceForm() {
                       </div>
                     ) : (
                       <>
-                        {showRecentStudents && recentStudents.length > 0 && (
-                          <div>
-                            <div className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-b">
-                              Siswa Terbaru
-                            </div>
-                            {recentStudents.map((student) => (
-                              <button
-                                key={student.id}
-                                onClick={() => handleStudentSelect(student)}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <User className="h-4 w-4 text-blue-600" />
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-medium text-slate-800 text-sm truncate">
-                                      {student.name}
-                                    </div>
-                                    <div className="text-xs text-slate-500 truncate">
-                                      NIS: {student.student_id} • {student.class_name}
-                                    </div>
-                                  </div>
-                                  <Badge variant="outline" className="text-xs flex-shrink-0">
-                                    {student.gender}
-                                  </Badge>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        
                         {students.length > 0 && (
                           <div>
-                            {!showRecentStudents && (
-                              <div className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-b">
-                                Hasil Pencarian ({students.length})
-                              </div>
-                            )}
+                            <div className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-b">
+                              Hasil Pencarian ({students.length})
+                            </div>
                             {students.map((student) => (
                               <button
                                 key={student.id}
