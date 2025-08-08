@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, ArrowLeft, Clock, User, CheckCircle, ClipboardList } from "lucide-react";
+import { Search, ArrowLeft, Clock, User, CheckCircle, ClipboardList, UserCheck, UserX, Heart, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,10 +22,10 @@ interface Student {
 }
 
 const statusOptions = [
-  { value: "Hadir", label: "Hadir" },
-  { value: "Izin", label: "Izin" },
-  { value: "Sakit", label: "Sakit" },
-  { value: "Alpha", label: "Alpha" },
+  { value: "Hadir", label: "Hadir", icon: UserCheck, color: "text-green-600" },
+  { value: "Izin", label: "Izin", icon: User, color: "text-blue-600" },
+  { value: "Sakit", label: "Sakit", icon: Heart, color: "text-yellow-600" },
+  { value: "Alpha", label: "Alpha", icon: UserX, color: "text-red-600" },
 ];
 
 const getDayName = (date: string) => {
@@ -326,81 +326,110 @@ export function AttendanceForm() {
               <Label className="text-slate-700 font-medium text-sm sm:text-base">
                 Pilih Siswa
               </Label>
-              <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={searchOpen}
-                    className="w-full justify-between border-slate-300 h-10 sm:h-11 text-left font-normal text-sm sm:text-base"
-                  >
-                    {selectedStudent ? (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <User className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                        <span className="truncate">
-                          {selectedStudent.name} - {selectedStudent.student_id}
-                        </span>
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Ketik nama atau NIS siswa..."
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="pl-10 border-slate-300 h-11 text-sm"
+                    autoComplete="off"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Search Results */}
+                {(searchValue || showRecentStudents) && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {isSearching ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-slate-500 min-w-0">
-                        <Search className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">
-                          Cari siswa berdasarkan nama atau NIS...
-                        </span>
-                      </div>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      placeholder="Ketik NIS atau nama siswa..."
-                      value={searchValue}
-                      onValueChange={setSearchValue}
-                      className="h-11"
-                    />
-                    <CommandList className="max-h-[250px] sm:max-h-[300px]">
-                      {isSearching && (
-                        <div className="flex items-center justify-center py-6">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
-                        </div>
-                      )}
-
-                      {!isSearching && showRecentStudents && recentStudents.length > 0 && (
-                        <CommandGroup heading="Siswa Terbaru">
-                          {recentStudents.map((student) => (
-                            <CommandItem
-                              key={student.id}
-                              value={`${student.name} ${student.student_id}`}
-                              onSelect={() => handleStudentSelect(student)}
-                              className="cursor-pointer touch-manipulation p-3 sm:p-2"
-                            >
-                              <div className="flex items-center justify-between w-full min-w-0">
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                      <>
+                        {showRecentStudents && recentStudents.length > 0 && (
+                          <div>
+                            <div className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-b">
+                              Siswa Terbaru
+                            </div>
+                            {recentStudents.map((student) => (
+                              <button
+                                key={student.id}
+                                onClick={() => handleStudentSelect(student)}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <User className="h-4 w-4 text-blue-600" />
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <div className="font-medium text-slate-800 text-sm sm:text-base truncate">
+                                    <div className="font-medium text-slate-800 text-sm truncate">
                                       {student.name}
                                     </div>
-                                    <div className="text-xs sm:text-sm text-slate-500 truncate">
+                                    <div className="text-xs text-slate-500 truncate">
                                       NIS: {student.student_id} • {student.class_name}
                                     </div>
                                   </div>
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {student.gender}
+                                  </Badge>
                                 </div>
-                                <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
-                                  {student.gender}
-                                </Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {students.length > 0 && (
+                          <div>
+                            {!showRecentStudents && (
+                              <div className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 border-b">
+                                Hasil Pencarian ({students.length})
                               </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                            )}
+                            {students.map((student) => (
+                              <button
+                                key={student.id}
+                                onClick={() => handleStudentSelect(student)}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <User className="h-4 w-4 text-green-600" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-medium text-slate-800 text-sm truncate">
+                                      {student.name}
+                                    </div>
+                                    <div className="text-xs text-slate-500 truncate">
+                                      NIS: {student.student_id} • {student.class_name}
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {student.gender}
+                                  </Badge>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {!isSearching && searchValue && students.length === 0 && (
+                          <div className="px-3 py-6 text-center text-slate-500 text-sm">
+                            Tidak ada siswa yang ditemukan untuk "{searchValue}"
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Attendance Status */}
@@ -411,11 +440,17 @@ export function AttendanceForm() {
                   <SelectValue placeholder="Pilih status kehadiran" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value} className="text-sm sm:text-base">
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                  {statusOptions.map((option) => {
+                    const IconComponent = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value} className="text-sm sm:text-base">
+                        <div className="flex items-center gap-2">
+                          <IconComponent className={`h-4 w-4 ${option.color}`} />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
