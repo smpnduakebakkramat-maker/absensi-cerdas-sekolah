@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
@@ -36,6 +37,8 @@ const Laporan = () => {
   const [todayStats, setTodayStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0, total: 0 });
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -174,7 +177,16 @@ const Laporan = () => {
         };
       });
 
-      setReports(reportData);
+      // Sort by class name and then by student name
+      const sortedReportData = reportData.sort((a, b) => {
+        if (a.class_name !== b.class_name) {
+          return (a.class_name || '').localeCompare(b.class_name || '');
+        }
+        return a.student_name.localeCompare(b.student_name);
+      });
+
+      setReports(sortedReportData);
+      setCurrentPage(1); // Reset to first page when generating new report
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
@@ -382,6 +394,21 @@ const Laporan = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageReports = reports.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1); // Reset to first page
   };
 
   return (
@@ -619,17 +646,38 @@ const Laporan = () => {
 
             {/* Reports Table */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  Detail Laporan ({reports.length} siswa)
-                </h3>
-                {loading && (
-                  <div className="text-sm text-muted-foreground">Memuat data...</div>
-                )}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Detail Laporan ({reports.length} siswa)
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Menampilkan {currentPageReports.length} dari {reports.length} siswa
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Tampilkan:</span>
+                    <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per halaman</span>
+                  </div>
+                  {loading && (
+                    <div className="text-sm text-muted-foreground">Memuat data...</div>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-3">
-                {reports.map(report => (
+                {currentPageReports.map(report => (
                   <Card key={report.student_id} className="border border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -684,6 +732,74 @@ const Laporan = () => {
                   </div>
                 )}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Halaman {currentPage} dari {totalPages}
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) handlePageChange(currentPage - 1);
+                          }}
+                          className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <PaginationItem key={pageNumber}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(pageNumber);
+                              }}
+                              isActive={currentPage === pageNumber}
+                            >
+                              {pageNumber}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      {totalPages > 5 && currentPage < totalPages - 2 && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                          }}
+                          className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
