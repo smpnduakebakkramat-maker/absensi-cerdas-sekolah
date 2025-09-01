@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart3, Calendar, Download, Filter, Edit, Trash2, Save, X } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -210,10 +211,85 @@ const Laporan = () => {
   };
 
   const exportReport = () => {
-    toast({
-      title: "Fitur Export",
-      description: "Fitur export Excel akan segera tersedia",
-    });
+    if (reports.length === 0) {
+      toast({
+        title: "Tidak Ada Data",
+        description: "Tidak ada data untuk diekspor",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Sort data by class name and then by student name
+      const sortedReports = [...reports].sort((a, b) => {
+        if (a.class_name !== b.class_name) {
+          return (a.class_name || '').localeCompare(b.class_name || '');
+        }
+        return a.student_name.localeCompare(b.student_name);
+      });
+
+      // Prepare data for Excel
+      const excelData = sortedReports.map((report, index) => ({
+        'No': index + 1,
+        'NIS': report.student_nis,
+        'Nama Siswa': report.student_name,
+        'Kelas': report.class_name,
+        'Total Hari Kerja': report.total_days,
+        'Hadir': report.hadir,
+        'Izin': report.izin,
+        'Sakit': report.sakit,
+        'Alpha': report.alpha,
+        'Persentase Kehadiran (%)': report.percentage
+      }));
+
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },  // No
+        { wch: 12 }, // NIS
+        { wch: 25 }, // Nama Siswa
+        { wch: 10 }, // Kelas
+        { wch: 15 }, // Total Hari Kerja
+        { wch: 8 },  // Hadir
+        { wch: 8 },  // Izin
+        { wch: 8 },  // Sakit
+        { wch: 8 },  // Alpha
+        { wch: 20 }  // Persentase
+      ];
+      worksheet['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      const monthName = new Date(2024, selectedMonth - 1).toLocaleDateString('id-ID', { month: 'long' });
+      const sheetName = selectedClass === 'all' 
+        ? `Semua Kelas - ${monthName} ${selectedYear}`
+        : `${selectedClass} - ${monthName} ${selectedYear}`;
+      
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+      // Generate filename
+      const filename = selectedClass === 'all'
+        ? `Laporan_Absensi_Semua_Kelas_${monthName}_${selectedYear}.xlsx`
+        : `Laporan_Absensi_${selectedClass}_${monthName}_${selectedYear}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(workbook, filename);
+
+      toast({
+        title: "Export Berhasil",
+        description: `Data berhasil diekspor ke file ${filename}`,
+      });
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      toast({
+        title: "Error",
+        description: "Gagal mengekspor data ke Excel",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
